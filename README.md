@@ -135,7 +135,7 @@ POST /api/recommend/    (JSON body with same params)
 
 ## 📊 Dataset
 
-30 real-world ethical products from 15+ brands including:
+100+ real-world ethical products from 15+ brands including:
 Patagonia, Allbirds, Veja, Eileen Fisher, Nudie Jeans, Girlfriend Collective,
 Manduka, Lush, Equal Exchange, BioLite, and more.
 
@@ -149,7 +149,7 @@ Certifications covered: GOTS, B-Corp, Fair Trade, OEKO-TEX, COSMOS, FSC
 
 This project demonstrates:
 - **Data Science**: Pandas DataFrames, feature engineering, normalization
-- **Machine Learning**: Supervised classification, similarity-based recommendation
+- **Machine Learning**: Supervised classification, similarity-based recommendation, KMEANS clustering, Neural Networks
 - **Web Development**: Django MVC pattern, REST APIs, template rendering
 - **Software Engineering**: Modular design, singleton pattern, clean separation of concerns
 
