@@ -1,12 +1,11 @@
 """
 Views for Ethical Shopping Assistant
-Connects Django frontend to the AI recommendation model + EcoMind LLM.
+100% own models - No external API needed.
+Pipeline: User message → NLP parser → Product filter → EcoMindNet scoring → Display
 """
 import sys
 import os
 import json
-import urllib.request
-import urllib.error
 from urllib.parse import unquote
 from django.shortcuts import render
 from django.http import JsonResponse, Http404
@@ -118,7 +117,7 @@ def about(request):
 
 
 # ═══════════════════════════════════════════════════════════
-# ECOMIND LLM  — Our own trained neural network
+# ECOMIND LLM — Our own trained neural network
 # ═══════════════════════════════════════════════════════════
 
 @csrf_exempt
@@ -126,8 +125,7 @@ def about(request):
 def api_predict_ethical(request):
     """
     POST /api/predict/
-    Uses our OWN trained EcoMindNet to predict ethical scores.
-    Body: { name, brand, category, materials, sustainability_cert, description }
+    Uses OWN trained EcoMindNet to predict ethical scores.
     """
     try:
         data = json.loads(request.body)
@@ -147,33 +145,31 @@ def api_predict_ethical(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 
-# ── Chatbot helpers ───────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════
+# CHATBOT — 100% own pipeline, zero external API
+#
+# Flow:
+#   1. chatbot.py  → parses user message (budget, category, filters)
+#   2. model.py    → fetches matching products from database
+#   3. EcoMindNet  → predicts ethical scores for each product
+#   4. Build HTML  → rich product cards returned to user
+# ═══════════════════════════════════════════════════════════
+
 import importlib.util, pathlib
 _cb_path = pathlib.Path(__file__).parent / "chatbot.py"
 _cb_spec = importlib.util.spec_from_file_location("chatbot", _cb_path)
 _cb_mod  = importlib.util.module_from_spec(_cb_spec)
 _cb_spec.loader.exec_module(_cb_mod)
-parse_and_respond = _cb_mod.parse_and_respond
 
-
-def _build_products_text(df):
-    lines = []
-    for _, row in df.iterrows():
-        price_inr = int(row["price"] * 83)
-        lines.append(
-            "- " + str(row["name"]) +
-            " | Brand: " + str(row["brand"]) +
-            " | Category: " + str(row["category"]) +
-            " | Price: Rs" + str(price_inr) +
-            " | Eco: " + str(row["eco_score"]) +
-            " | Ethics: " + str(row["ethics_score"]) +
-            " | Carbon: " + str(row["carbon_footprint"]) + "kg" +
-            " | Cert: " + str(row["sustainability_cert"]) +
-            " | Materials: " + str(row["materials"]) +
-            " | Score: " + str(row["composite_score"]) +
-            " | Desc: " + str(row["description"])
-        )
-    return "\n".join(lines)
+# Import individual functions from chatbot.py
+_extract_budget_inr   = _cb_mod._extract_budget_inr
+_extract_categories   = _cb_mod._extract_categories
+_extract_ethical_filters = _cb_mod._extract_ethical_filters
+_make_ethical_tags    = _cb_mod._make_ethical_tags
+_build_product_link   = _cb_mod._build_product_link
+_greeting_response    = _cb_mod._greeting_response
+_help_response        = _cb_mod._help_response
+_no_results_response  = _cb_mod._no_results_response
 
 
 CARD_STYLES = (
@@ -197,22 +193,191 @@ CARD_STYLES = (
     "padding-top:0.55rem;border-top:1px solid rgba(74,222,128,0.08);gap:0.5rem;}"
     ".elc-price{font-weight:700;color:#e8f5ee;font-size:0.9rem;}"
     ".elc-match{font-size:0.7rem;color:#4a6856;font-style:italic;flex:1;text-align:right;}"
-    ".elc-summary{font-size:0.82rem;color:#4ade80;margin-top:0.5rem;padding-top:0.5rem;"
+    ".elc-summary{font-size:0.82rem;color:#4ade80;margin-top:0.75rem;padding-top:0.5rem;"
     "border-top:1px solid rgba(74,222,128,0.1);}"
-    ".elc-error{font-size:0.83rem;color:#fbbf24;background:rgba(251,191,36,0.08);"
-    "border:1px solid rgba(251,191,36,0.2);padding:0.75rem 1rem;border-radius:10px;}"
     ".elc-llm-badge{display:inline-block;background:rgba(74,222,128,0.1);"
     "border:1px solid rgba(74,222,128,0.3);color:#4ade80;padding:3px 10px;"
-    "border-radius:5px;font-size:0.68rem;font-weight:700;margin-bottom:0.6rem;}"
+    "border-radius:5px;font-size:0.68rem;font-weight:700;margin-bottom:0.75rem;}"
+    ".elc-bar-wrap{background:rgba(255,255,255,0.05);border-radius:99px;height:4px;overflow:hidden;}"
+    ".elc-bar{height:100%;border-radius:99px;background:linear-gradient(90deg,#2d6a4f,#4ade80);}"
     "</style>"
 )
+
+
+def _get_carbon_info(carbon):
+    """Return color and label for carbon footprint value."""
+    if carbon <= 0.5:
+        return "#4ade80", "Ultra Low"
+    elif carbon <= 1.5:
+        return "#86efac", "Low"
+    elif carbon <= 3.0:
+        return "#fbbf24", "Moderate"
+    else:
+        return "#f87171", "High"
+
+
+def _build_product_card(row, rank, llm_result=None):
+    """
+    Build a rich HTML card for one product.
+    llm_result: dict from EcoMindNet prediction (optional, enhances scores)
+    """
+    medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
+    medal  = medals[rank] if rank < len(medals) else str(rank + 1)
+
+    # Use EcoMindNet predicted scores if available, else use dataset scores
+    if llm_result:
+        eco_score    = llm_result.get("eco_score",    row["eco_score"])
+        ethics_score = llm_result.get("ethics_score", row["ethics_score"])
+        carbon_label = llm_result.get("carbon_label", "")
+        llm_tags     = llm_result.get("tags", [])
+        confidence   = llm_result.get("confidence", 0)
+        overall      = llm_result.get("overall_score", row["composite_score"])
+    else:
+        eco_score    = row["eco_score"]
+        ethics_score = row["ethics_score"]
+        carbon_label = ""
+        llm_tags     = []
+        confidence   = 0
+        overall      = row["composite_score"]
+
+    carbon       = row["carbon_footprint"]
+    price_inr    = int(row["price"] * 83)
+    carbon_color, carbon_text = _get_carbon_info(carbon)
+    link         = _build_product_link(row["name"], row["brand"])
+
+    # Build tags — from dataset + EcoMindNet predictions
+    dataset_tags = _make_ethical_tags(row.to_dict())
+    extra_tags   = ""
+    for t in llm_tags:
+        label = t.replace("_", " ").title()
+        extra_tags += (
+            '<span style="background:rgba(74,222,128,0.12);color:#a7f3c1;'
+            'padding:2px 8px;border-radius:5px;font-size:0.68rem;font-weight:700;">'
+            + label + " 🧠</span> "
+        )
+
+    tags_html = " ".join(dataset_tags) + " " + extra_tags
+
+    # Score bar widths
+    eco_w  = int(eco_score * 10)
+    eth_w  = int(ethics_score * 10)
+    ovr_w  = int(float(overall) * 10)
+
+    # LLM confidence badge
+    conf_badge = ""
+    if confidence > 0:
+        conf_badge = (
+            '<span style="font-size:0.65rem;color:#4ade80;'
+            'background:rgba(74,222,128,0.08);padding:1px 6px;border-radius:4px;">'
+            "🧠 " + str(confidence) + "% confident</span>"
+        )
+
+    delay = rank * 80
+
+    return (
+        '<div class="eco-llm-card" style="animation-delay:' + str(delay) + 'ms">'
+
+        # ── Header ──────────────────────────────────────────
+        '<div class="elc-header">'
+        '<div style="flex:1">'
+        '<div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:2px;">'
+        '<span>' + medal + '</span>'
+        '<a href="' + link + '" target="_blank" class="elc-name">' + str(row["name"]) + ' ↗</a>'
+        '</div>'
+        '<div class="elc-brand">by ' + str(row["brand"]) + ' · ' + str(row["category"]) + '</div>'
+        '</div>'
+        '<div style="text-align:right;flex-shrink:0;">'
+        '<div class="elc-score">' + str(overall) + '</div>'
+        '<div style="font-size:0.62rem;color:#4a6856;">AI Score</div>'
+        '</div>'
+        '</div>'
+
+        # ── Description ──────────────────────────────────────
+        '<p class="elc-desc">' + str(row["description"]) + '</p>'
+
+        # ── Tags ─────────────────────────────────────────────
+        '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:0.65rem;">'
+        + tags_html +
+        '</div>'
+
+        # ── Score bars ────────────────────────────────────────
+        '<div style="display:grid;grid-template-columns:56px 1fr 34px;gap:3px 6px;'
+        'align-items:center;font-size:0.68rem;margin-bottom:0.65rem;">'
+
+        '<span style="color:#4a6856;">Eco</span>'
+        '<div class="elc-bar-wrap"><div class="elc-bar" style="width:' + str(eco_w) + '%"></div></div>'
+        '<span style="color:#4ade80;font-family:DM Mono,monospace;">' + str(eco_score) + '</span>'
+
+        '<span style="color:#4a6856;">Ethics</span>'
+        '<div class="elc-bar-wrap"><div class="elc-bar" style="width:' + str(eth_w) + '%"></div></div>'
+        '<span style="color:#4ade80;font-family:DM Mono,monospace;">' + str(ethics_score) + '</span>'
+
+        '<span style="color:#4a6856;">Overall</span>'
+        '<div class="elc-bar-wrap"><div class="elc-bar" style="width:' + str(ovr_w) + '%;'
+        'background:linear-gradient(90deg,#16a34a,#86efac)"></div></div>'
+        '<span style="color:#86efac;font-family:DM Mono,monospace;">' + str(overall) + '</span>'
+
+        '</div>'
+
+        # ── Footer ────────────────────────────────────────────
+        '<div class="elc-footer">'
+        '<div style="display:flex;align-items:center;gap:0.4rem;">'
+        '<span style="color:' + carbon_color + ';font-size:0.72rem;">💨 ' + str(carbon) + 'kg CO₂</span>'
+        '<span style="background:rgba(74,222,128,0.08);color:' + carbon_color + ';'
+        'padding:1px 6px;border-radius:4px;font-size:0.65rem;font-weight:600;">' + carbon_text + '</span>'
+        '</div>'
+        '<div style="display:flex;align-items:center;gap:0.5rem;">'
+        + conf_badge +
+        '<span class="elc-price">₹' + str(price_inr) + '</span>'
+        '</div>'
+        '</div>'
+
+        '</div>'
+    )
+
+
+def _score_row_against_filters(row, ethical_filters):
+    """Re-rank products by how many ethical filters they match."""
+    score   = 0
+    cert    = str(row.get("sustainability_cert", "")).lower()
+    mats    = str(row.get("materials", "")).lower()
+    desc    = str(row.get("description", "")).lower()
+    combined = cert + " " + mats + " " + desc
+
+    filter_map = {
+        "organic":     ["organic", "usda", "cosmos", "gots"],
+        "fair_trade":  ["fair trade", "fairtrade"],
+        "b_corp":      ["b-corp", "b corp"],
+        "vegan":       ["vegan", "peta", "plant"],
+        "recycled":    ["recycled", "upcycled"],
+        "natural":     ["natural", "plant", "botanical", "herb", "organic"],
+        "zero_waste":  ["zero", "package", "compostable", "refill"],
+        "sustainable": ["sustainable", "eco", "certified"],
+        "certified":   ["gots", "oeko", "bluesign", "fsc", "certified",
+                        "fair trade", "b-corp", "usda", "cosmos"],
+    }
+
+    for f in ethical_filters:
+        for kw in filter_map.get(f, []):
+            if kw in combined:
+                score += 1
+                break
+        if f == "low_carbon" and float(row.get("carbon_footprint", 99)) <= 1.5:
+            score += 2
+
+    return score
 
 
 @csrf_exempt
 @require_http_methods(["POST"])
 def api_chat(request):
     """
-    Chatbot powered by Gemini (language) + EcoMindNet (ethical scoring).
+    100% own pipeline chatbot — no external API.
+
+    Step 1: Parse user message  → budget, category, ethical filters
+    Step 2: Filter products     → from 203-product database
+    Step 3: EcoMindNet scores   → predict ethical scores for results
+    Step 4: Build HTML cards    → return to user
     """
     try:
         data    = json.loads(request.body)
@@ -223,99 +388,182 @@ def api_chat(request):
     if not message:
         return JsonResponse({"error": "Empty message"}, status=400)
 
-    ai_model = get_model()
-    products_text = _build_products_text(ai_model.df)
+    text_lower = message.lower()
 
+    # ── Greeting ──────────────────────────────────────────────
+    greet_words = ["hello", "hi", "hey", "good morning", "good evening", "howdy"]
+    if any(text_lower.startswith(g) for g in greet_words) and len(message.split()) <= 4:
+        return JsonResponse({"html": _greeting_response(), "status": "ok", "engine": "ecomind"})
+
+    # ── Help ──────────────────────────────────────────────────
+    help_words = ["help", "what can you do", "how does", "capabilities"]
+    if any(h in text_lower for h in help_words):
+        return JsonResponse({"html": _help_response(), "status": "ok", "engine": "ecomind"})
+
+    # ── Step 1: Parse intent ──────────────────────────────────
+    budget_usd   = _extract_budget_inr(message)
+    categories   = _extract_categories(message)
+    eth_filters  = _extract_ethical_filters(message)
+
+    # ── Step 2: Filter products from database ─────────────────
+    ai_model = get_model()
+    df = ai_model.df.copy()
+
+    # Category filter
+    if categories:
+        df = df[df["category"].isin(categories)]
+
+    # Budget filter — gracefully relax if too tight
+    budget_relaxed = False
+    if budget_usd:
+        strict = df[df["price"] <= budget_usd]
+        if strict.empty:
+            budget_relaxed = True   # show cheapest available
+        else:
+            df = strict
+
+    # Keyword filter
+    import re
+    stop = {"i","want","need","looking","find","show","get","give","me","some","a","an",
+            "the","and","or","with","for","that","which","should","is","are","be","have",
+            "has","very","quite","really","less","more","most","best","good","please",
+            "below","under","within","budget","price","cost","rupees","rs","inr","₹"}
+    words   = re.findall(r'[a-z]+', text_lower)
+    kw_list = [w for w in words if w not in stop and len(w) > 3]
+    keyword = " ".join(kw_list[:3]) if kw_list else None
+
+    if keyword and not df.empty:
+        kw = keyword.lower()
+        kw_mask = (
+            df["name"].str.lower().str.contains(kw, na=False) |
+            df["brand"].str.lower().str.contains(kw, na=False) |
+            df["materials"].str.lower().str.contains(kw, na=False) |
+            df["description"].str.lower().str.contains(kw, na=False) |
+            df["sustainability_cert"].str.lower().str.contains(kw, na=False) |
+            df["category"].str.lower().str.contains(kw, na=False)
+        )
+        if kw_mask.any():
+            df = df[kw_mask]
+
+    # Ethical filter re-ranking
+    if eth_filters and not df.empty:
+        df = df.copy()
+        df["_eth_score"] = df.apply(
+            lambda r: _score_row_against_filters(r.to_dict(), eth_filters), axis=1
+        )
+        # Hard filter for low carbon
+        if "low_carbon" in eth_filters:
+            lc = df[df["carbon_footprint"] <= 2.0]
+            if not lc.empty:
+                df = lc
+        # Hard filter for organic/certified
+        if "organic" in eth_filters or "certified" in eth_filters:
+            org_certs = ["organic", "gots", "cosmos", "usda", "certified", "non-gmo"]
+            org_mask  = df["sustainability_cert"].str.lower().apply(
+                lambda c: any(kw in c for kw in org_certs)
+            )
+            if org_mask.any():
+                df = df[org_mask]
+
+        df = df.sort_values(["_eth_score", "composite_score"], ascending=[False, False])
+    else:
+        df = df.sort_values("composite_score", ascending=False)
+
+    # Top 5 results
+    results = df.head(5)
+
+    if results.empty:
+        return JsonResponse({
+            "html": _no_results_response(message, budget_usd, categories),
+            "status": "ok", "engine": "ecomind"
+        })
+
+    # ── Step 3: EcoMindNet — predict ethical scores ───────────
+    llm_predictions = {}
     llm_ready = os.path.exists(
         os.path.join(BASE_DIR, "ecomind_llm", "saved_model", "ecomind_net.pkl")
     )
+    if llm_ready:
+        try:
+            from ecomind_llm.predictor import get_predictor
+            predictor = get_predictor()
+            product_list = [row.to_dict() for _, row in results.iterrows()]
+            batch = predictor.predict_batch(product_list)
+            llm_predictions = {i: batch[i] for i in range(len(batch))}
+        except Exception:
+            llm_predictions = {}
 
-    llm_note = (
-        "\nNOTE: This website has its own trained EcoMind Neural Network "
-        "that predicts eco scores, ethics scores, carbon level and tags. "
-        "When showing products, mention scores are verified by EcoMind AI.\n"
-        if llm_ready else ""
-    )
+    # ── Step 4: Build HTML response ───────────────────────────
+    budget_inr = int(budget_usd * 83) if budget_usd else None
+    cat_str    = ", ".join(categories) if categories else "all categories"
+    filter_str = ", ".join(eth_filters).replace("_", " ") if eth_filters else ""
 
-    system_prompt = (
-        "You are EcoMind, an expert AI ethical shopping assistant.\n"
-        "You ONLY help with ethical and eco-friendly product recommendations.\n"
-        "Politely refuse anything outside shopping.\n"
-        + llm_note +
-        "\nProduct catalogue:\n" + products_text +
-        "\n\nINSTRUCTIONS:\n"
-        "1. Understand budget in Rs, category, ethical preferences\n"
-        "2. Pick TOP 3-5 matching products from catalogue ONLY\n"
-        "3. If budget too low show cheapest available and mention price\n"
-        "4. Return ONLY pure HTML, no markdown, no backticks\n\n"
-        "HTML format per product:\n"
-        '<div class="eco-llm-card">'
-        '<div class="elc-header">'
-        '<div>'
-        '<a href="https://www.google.com/search?q=PRODUCT_NAME+BRAND+buy&tbm=shop" target="_blank" class="elc-name">PRODUCT NAME</a>'
-        '<div class="elc-brand">by BRAND - CATEGORY</div>'
-        '</div>'
-        '<div class="elc-score">COMPOSITE_SCORE</div>'
-        '</div>'
-        '<p class="elc-desc">DESCRIPTION</p>'
-        '<div class="elc-tags">'
-        '<span class="elc-tag cert">CERTIFICATION</span>'
-        '<span class="elc-tag carbon">CARBON kg CO2</span>'
-        '<span class="elc-tag eco">Eco: ECO_SCORE</span>'
-        '<span class="elc-tag ethics">Ethics: ETHICS_SCORE</span>'
-        '</div>'
-        '<div class="elc-footer">'
-        '<span class="elc-price">Rs PRICE</span>'
-        '<span class="elc-match">Why: ONE sentence reason</span>'
-        '</div>'
-        '</div>'
-        '\nAfter all cards: <p class="elc-summary">Found X products matching your request.</p>'
-    )
-
-    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-    gemini_url = (
-        "https://generativelanguage.googleapis.com/v1beta/models/"
-        "gemini-2.0-flash:generateContent?key=" + GEMINI_API_KEY
-    )
-
-    payload = json.dumps({
-        "system_instruction": {"parts": [{"text": system_prompt}]},
-        "contents": [{"role": "user", "parts": [{"text": message}]}],
-        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 2048}
-    }).encode("utf-8")
-
-    try:
-        req = urllib.request.Request(
-            gemini_url, data=payload,
-            headers={"Content-Type": "application/json"}, method="POST"
+    # Summary header
+    if budget_relaxed:
+        min_price = int(results["price"].min() * 83)
+        summary = (
+            '<p style="font-size:0.8rem;color:#fbbf24;margin-bottom:0.5rem;">'
+            '⚠️ No products under ₹' + str(budget_inr) + '. '
+            'Showing closest matches from ₹' + str(min_price) + '.</p>'
+            '<p style="font-size:0.78rem;color:#8aaa94;margin-bottom:0.75rem;">'
+            'Found <strong style="color:#4ade80">' + str(len(results)) + '</strong>'
+            ' products in <em>' + cat_str + '</em>'
         )
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
+    else:
+        summary = (
+            '<p style="font-size:0.78rem;color:#8aaa94;margin-bottom:0.75rem;">'
+            'Found <strong style="color:#4ade80">' + str(len(results)) + '</strong>'
+            ' ethical products in <em>' + cat_str + '</em>'
+            + (' under ₹' + str(budget_inr) if budget_inr else '')
+        )
+    if filter_str:
+        summary += ' · <em>' + filter_str + '</em>'
+    summary += '</p>'
 
-        raw_html = result["candidates"][0]["content"]["parts"][0]["text"]
-        raw_html = raw_html.replace("```html", "").replace("```", "").strip()
+    # LLM badge
+    llm_badge = ""
+    if llm_ready and llm_predictions:
+        llm_badge = (
+            '<span class="elc-llm-badge">'
+            '🧠 Scores predicted by EcoMind Neural Network'
+            '</span><br>'
+        )
 
-        llm_badge = ""
-        if llm_ready:
-            llm_badge = (
-                '<span class="elc-llm-badge">'
-                '🧠 Scores verified by EcoMind Neural Network'
-                '</span><br>'
-            )
+    # Build all product cards
+    cards = ""
+    for i, (_, row) in enumerate(results.iterrows()):
+        llm_result = llm_predictions.get(i, None)
+        cards += _build_product_card(row, i, llm_result)
 
-        return JsonResponse({
-            "html": CARD_STYLES + llm_badge + raw_html,
-            "status": "ok",
-            "engine": "gemini+ecomind_llm" if llm_ready else "gemini"
-        })
+    # Suggestion chips
+    suggestions = [
+        "Organic food under ₹500",
+        "Fair trade clothing",
+        "Low carbon kitchen products",
+        "Vegan personal care",
+    ]
+    chips = "".join([
+        '<button onclick="setInput(this.textContent)" '
+        'style="background:rgba(74,222,128,0.07);border:1px solid rgba(74,222,128,0.18);'
+        'color:#8aaa94;padding:3px 10px;border-radius:99px;font-size:0.7rem;cursor:pointer;'
+        'font-family:inherit;transition:all 0.2s;" '
+        'onmouseover="this.style.color=\'#4ade80\'" '
+        'onmouseout="this.style.color=\'#8aaa94\'">'
+        + s + '</button>'
+        for s in suggestions
+    ])
+    suggest_html = (
+        '<div style="margin-top:0.75rem;padding-top:0.75rem;'
+        'border-top:1px solid rgba(74,222,128,0.08);">'
+        '<div style="font-size:0.68rem;color:#4a6856;margin-bottom:0.4rem;">💡 Try asking:</div>'
+        '<div style="display:flex;flex-wrap:wrap;gap:0.4rem;">' + chips + '</div>'
+        '</div>'
+    )
 
-    except urllib.error.HTTPError as e:
-        err_body = e.read().decode("utf-8")
-        return JsonResponse({
-            "html": '<p style="color:#f87171;">Gemini error ' + str(e.code) + ': ' + err_body + '</p>',
-            "status": "error"
-        })
+    full_html = CARD_STYLES + llm_badge + summary + cards + suggest_html
 
-    except Exception as e:
-        html = parse_and_respond(message, ai_model)
-        return JsonResponse({"html": html, "status": "fallback", "engine": "rule-based"})
+    return JsonResponse({
+        "html": full_html,
+        "status": "ok",
+        "engine": "ecomind_llm" if llm_ready else "ecomind_rule_based"
+    })
