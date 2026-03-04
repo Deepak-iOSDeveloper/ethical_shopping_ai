@@ -1,0 +1,393 @@
+{% extends 'shop_assistant/base.html' %}
+{% block title %}{{ product.name }} — EcoMind{% endblock %}
+
+{% block extra_head %}
+<style>
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--text-muted); font-size: 0.85rem;
+    text-decoration: none; margin-bottom: 1.5rem;
+    transition: color 0.2s;
+  }
+  .back-link:hover { color: var(--green-bright); }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 2rem;
+    align-items: start;
+  }
+  @media (max-width: 900px) { .detail-grid { grid-template-columns: 1fr; } }
+
+  /* Left panel */
+  .product-hero {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+  }
+
+  .product-category-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--green-pale);
+    background: rgba(74,222,128,0.08);
+    border: 1px solid rgba(74,222,128,0.15);
+    padding: 3px 10px;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+  }
+
+  .detail-name {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+    margin-bottom: 0.4rem;
+  }
+
+  .detail-brand {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .detail-desc {
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+  }
+
+  .detail-tags {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem;
+  }
+
+  .material-tag {
+    padding: 4px 12px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+
+  .ai-insight {
+    background: rgba(74,222,128,0.05);
+    border: 1px solid rgba(74,222,128,0.15);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-top: 1.5rem;
+  }
+
+  .ai-insight-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--green-bright);
+    margin-bottom: 0.75rem;
+  }
+
+  /* Score panel */
+  .score-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    position: sticky;
+    top: 80px;
+  }
+
+  .score-panel-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .big-score {
+    text-align: center;
+    padding: 1.5rem 0;
+  }
+
+  .big-score-value {
+    font-family: var(--font-display);
+    font-size: 4rem;
+    font-weight: 700;
+    color: var(--green-bright);
+    line-height: 1;
+  }
+
+  .big-score-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .score-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin: 1.25rem 0;
+  }
+
+  .score-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .score-row-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .score-row-val {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--green-bright);
+    white-space: nowrap;
+  }
+
+  .price-display {
+    text-align: center;
+    padding: 1rem;
+    background: rgba(255,255,255,0.03);
+    border-radius: var(--radius);
+    margin: 1rem 0;
+  }
+
+  .price-big {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 700;
+  }
+
+  .price-tier {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-transform: capitalize;
+  }
+
+  /* AI probability gauge */
+  .prob-gauge {
+    position: relative;
+    height: 8px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 100px;
+    overflow: hidden;
+    margin: 6px 0 2px;
+  }
+
+  .prob-fill {
+    position: absolute;
+    left: 0; top: 0; height: 100%;
+    border-radius: 100px;
+    background: linear-gradient(90deg, #22c55e, #4ade80);
+    transition: width 1.2s ease;
+  }
+
+  /* Brand story */
+  .brand-story {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .brand-story-header {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--amber);
+    margin-bottom: 0.75rem;
+  }
+
+  .brand-story p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  /* Similar products */
+  .similar-section { margin-top: 2.5rem; }
+
+  .similar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .similar-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .similar-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+  }
+
+  .similar-name { font-weight: 600; font-size: 0.9rem; }
+  .similar-brand { font-size: 0.78rem; color: var(--text-muted); }
+  .similar-score { font-family: var(--font-mono); font-size: 0.85rem; color: var(--green-bright); }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'shop_assistant:recommend' %}" class="back-link animate-in">← Back to results</a>
+
+<div class="detail-grid">
+
+  <!-- LEFT: Product Info -->
+  <div>
+    <div class="product-hero animate-in">
+      <div class="product-category-badge">{{ product.category }}</div>
+      <h1 class="detail-name">{{ product.name }}</h1>
+      <div class="detail-brand">by <strong>{{ product.brand }}</strong> &nbsp;·&nbsp; <span class="cert-tag">{{ product.sustainability_cert }}</span></div>
+      <p class="detail-desc">{{ product.description }}</p>
+
+      <div class="detail-tags">
+        {% for mat in product.materials_list %}
+<span class="material-tag">🌱 {{ mat|title }}</span>
+{% endfor %}
+        <span class="material-tag">💨 {{ product.carbon_footprint }}kg CO₂</span>
+      </div>
+
+      <!-- AI Insight Box -->
+      <div class="ai-insight">
+        <div class="ai-insight-title">🤖 AI Ethical Analysis</div>
+        <p style="font-size:0.875rem; color:var(--text-muted); line-height:1.7;">
+          EcoMind's RandomForest model rates this product
+          <strong style="color:var(--green-bright);">{{ product.ethical_probability }}% likely highly ethical</strong>
+          based on its eco score ({{ product.eco_score }}), ethics score ({{ product.ethics_score }}),
+          carbon footprint ({{ product.carbon_footprint }}kg), and price point.
+          {% if product.composite_score >= 9.0 %}
+          This is an <strong style="color:var(--green-bright);">outstanding</strong> choice — among the top products in our database.
+          {% elif product.composite_score >= 8.5 %}
+          This is a <strong style="color:var(--amber);">very strong</strong> ethical product worth recommending.
+          {% else %}
+          This product meets our ethical standards and is a solid sustainable choice.
+          {% endif %}
+        </p>
+      </div>
+    </div>
+
+    <!-- Brand Story -->
+    <div class="brand-story animate-in" style="animation-delay:0.1s">
+      <div class="brand-story-header">🏷️ About {{ product.brand }}</div>
+      <p>{{ product.brand_story }}</p>
+    </div>
+
+    <!-- Similar Products -->
+    {% if similar %}
+    <div class="similar-section animate-in" style="animation-delay:0.2s">
+      <h3 style="font-family:var(--font-display); font-size:1.25rem; margin-bottom:0.25rem;">You Might Also Like</h3>
+      <p style="font-size:0.83rem; color:var(--text-muted);">Similar products by AI cosine similarity</p>
+      <div class="similar-grid">
+        {% for s in similar %}
+        <a href="{% url 'shop_assistant:product_detail' s.name %}" class="similar-card">
+          <div class="similar-name">{{ s.name }}</div>
+          <div class="similar-brand">{{ s.brand }} · {{ s.category }}</div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+            <span class="similar-score">Score: {{ s.composite_score }}</span>
+            <span style="font-weight:700; font-size:0.875rem;">${{ s.price }}</span>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- RIGHT: Score Panel -->
+  <div>
+    <div class="score-panel animate-in" style="animation-delay:0.05s">
+      <div class="score-panel-title">📊 EcoMind AI Score</div>
+
+      <div class="big-score">
+        <div class="big-score-value">{{ product.composite_score }}</div>
+        <div class="big-score-label">Composite Ethical Score / 10</div>
+      </div>
+
+      <div class="score-breakdown">
+        <div>
+          <div class="score-row">
+            <div class="score-row-label">🌿 Eco Score</div>
+            <div class="score-row-val">{{ product.eco_score }}/10</div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-bar" style="width:{{ product.eco_score }}0%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="score-row">
+            <div class="score-row-label">⚖️ Ethics Score</div>
+            <div class="score-row-val">{{ product.ethics_score }}/10</div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-bar" style="width:{{ product.ethics_score }}0%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="score-row">
+            <div class="score-row-label">🤖 AI: Highly Ethical?</div>
+            <div class="score-row-val">{{ product.ethical_probability }}%</div>
+          </div>
+          <div class="prob-gauge">
+            <div class="prob-fill" style="width:{{ product.ethical_probability }}%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="score-row">
+            <div class="score-row-label">💨 Carbon Footprint</div>
+            <div class="score-row-val">{{ product.carbon_footprint }}kg</div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-bar" style="width:{{ product.carbon_footprint }}0%; background:linear-gradient(90deg,#22c55e,#fbbf24)"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="price-display">
+        <div class="price-big">${{ product.price }}</div>
+        <div class="price-tier">{{ product.price_tier }} tier</div>
+      </div>
+
+      <a href="https://www.google.com/search?q={{ product.brand }} official site" target="_blank" class="btn btn-primary"
+         style="width:100%; justify-content:center; margin-top:0.5rem;"
+         target="_blank">
+        🛒 Shop {{ product.brand }}
+      </a>
+      <a href="{% url 'shop_assistant:recommend' %}?category={{ product.category }}"
+         class="btn btn-outline" style="width:100%; justify-content:center; margin-top:0.5rem;">
+        More {{ product.category }}
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

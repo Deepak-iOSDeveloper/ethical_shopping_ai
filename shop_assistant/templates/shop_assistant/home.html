@@ -1,0 +1,398 @@
+{% extends 'shop_assistant/base.html' %}
+{% block title %}EcoMind — AI-Driven Ethical Shopping{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ─── HERO ─── */
+  .hero {
+    padding: 5rem 0 3rem;
+    text-align: center;
+    position: relative;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 100px;
+    background: rgba(74,222,128,0.1);
+    border: 1px solid rgba(74,222,128,0.2);
+    color: var(--green-pale);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    animation: fadeUp 0.5s 0.1s ease both;
+    max-width: 760px;
+    margin: 0 auto 1.2rem;
+  }
+
+  .hero h1 em {
+    font-style: normal;
+    color: var(--green-bright);
+  }
+
+  .hero p {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    max-width: 560px;
+    margin: 0 auto 2.5rem;
+    animation: fadeUp 0.5s 0.2s ease both;
+  }
+
+  .hero-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    animation: fadeUp 0.5s 0.3s ease both;
+  }
+
+  /* ─── SEARCH BAR ─── */
+  .search-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem 2rem;
+    margin: 2.5rem 0;
+    animation: fadeUp 0.5s 0.35s ease both;
+  }
+
+  .search-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 1rem;
+    align-items: end;
+  }
+
+  @media (max-width: 768px) {
+    .search-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ─── STATS ROW ─── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 3rem;
+    animation: fadeUp 0.5s 0.4s ease both;
+  }
+
+  @media (max-width: 768px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--green-bright);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 4px;
+  }
+
+  /* ─── SECTION HEADER ─── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  /* ─── PRODUCT GRID ─── */
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 3rem;
+  }
+
+  .product-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .product-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--green-bright), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .product-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(74,222,128,0.08);
+  }
+
+  .product-card:hover::before { opacity: 1; }
+
+  .product-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .product-emoji {
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  .product-score-big {
+    font-family: var(--font-mono);
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--green-bright);
+  }
+
+  .product-name {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--text-primary);
+  }
+
+  .product-brand {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .product-desc {
+    font-size: 0.84rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .product-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .product-price {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+  }
+
+  .score-bars {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 4px 8px;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  /* ─── CATEGORY CHIPS ─── */
+  .category-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    animation: fadeUp 0.5s 0.45s ease both;
+  }
+
+  .chip {
+    padding: 5px 14px;
+    border-radius: 100px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .chip:hover, .chip.active {
+    background: var(--glow);
+    border-color: var(--border-hover);
+    color: var(--green-bright);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">✨ AI-Powered Recommendations</div>
+  <h1>Shop <em>Ethically</em>,<br>Live Sustainably</h1>
+  <p>Our AI model scores every product on eco-friendliness, ethics, and carbon footprint — so you can make choices that matter.</p>
+  <div class="hero-actions">
+    <a href="{% url 'shop_assistant:recommend' %}" class="btn btn-primary">🌿 Get Recommendations</a>
+    <a href="{% url 'shop_assistant:about' %}" class="btn btn-outline">How the AI works →</a>
+  </div>
+</section>
+
+<!-- SEARCH PANEL -->
+<div class="search-panel">
+  <form action="{% url 'shop_assistant:recommend' %}" method="get">
+    <div class="search-grid">
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select name="category" class="form-control">
+          {% for cat in categories %}
+          <option value="{{ cat }}">{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Max Budget ($)</label>
+        <input type="number" name="budget" class="form-control" placeholder="e.g. 100" min="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Search Keywords</label>
+        <input type="text" name="keyword" class="form-control" placeholder="e.g. organic, bamboo…">
+      </div>
+      <div class="form-group">
+        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">
+          🔍 Find
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.total_products }}</div>
+    <div class="stat-label">Products Analyzed</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.total_brands }}</div>
+    <div class="stat-label">Ethical Brands</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.avg_eco_score }}</div>
+    <div class="stat-label">Avg Eco Score</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.avg_ethics_score }}</div>
+    <div class="stat-label">Avg Ethics Score</div>
+  </div>
+</div>
+
+<!-- CATEGORY CHIPS -->
+<div class="category-chips">
+  <a href="{% url 'shop_assistant:recommend' %}" class="chip">All</a>
+  {% for cat in categories %}
+  {% if cat != 'All' %}
+  <a href="{% url 'shop_assistant:recommend' %}?category={{ cat }}" class="chip">{{ cat }}</a>
+  {% endif %}
+  {% endfor %}
+</div>
+
+<!-- FEATURED PRODUCTS -->
+<div class="section-header">
+  <h2 class="section-title">🏆 AI Top Picks</h2>
+  <a href="{% url 'shop_assistant:recommend' %}" class="btn btn-outline">View all →</a>
+</div>
+
+<div class="product-grid">
+{% for p in featured %}
+<a href="{% url 'shop_assistant:product_detail' p.name %}" class="product-card animate-in" style="animation-delay: {{ forloop.counter0 }}00ms">
+  <div class="product-header">
+    <div class="product-emoji">
+      {% if p.category == 'Clothing' %}👕
+      {% elif p.category == 'Footwear' %}👟
+      {% elif p.category == 'Sportswear' %}🏃
+      {% elif p.category == 'Personal Care' %}🧴
+      {% elif p.category == 'Kitchen' %}🍃
+      {% elif p.category == 'Home' %}🏡
+      {% elif p.category == 'Accessories' %}🎒
+      {% elif p.category == 'Outdoors' %}⛺
+      {% elif p.category == 'Food' %}☕
+      {% else %}🌿{% endif %}
+    </div>
+    <div class="product-score-big">{{ p.composite_score }}</div>
+  </div>
+
+  <div>
+    <div class="product-name">{{ p.name }}</div>
+    <div class="product-brand">by {{ p.brand }} &nbsp;·&nbsp; <span class="cert-tag">{{ p.sustainability_cert }}</span></div>
+  </div>
+
+  <div class="product-desc">{{ p.description }}</div>
+
+  <div class="score-bars">
+    <span>Eco</span>
+    <div class="progress-wrap"><div class="progress-bar" style="width:{{ p.eco_score }}0%"></div></div>
+    <span class="text-mono text-green">{{ p.eco_score }}</span>
+    <span>Ethics</span>
+    <div class="progress-wrap"><div class="progress-bar" style="width:{{ p.ethics_score }}0%"></div></div>
+    <span class="text-mono text-green">{{ p.ethics_score }}</span>
+  </div>
+
+  <div class="product-footer">
+    <span class="product-price">${{ p.price }}</span>
+    <div style="display:flex; gap:6px; align-items:center;">
+      <span class="score-badge score-high">CO₂ {{ p.carbon_footprint }}kg</span>
+    </div>
+  </div>
+</a>
+{% endfor %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}EcoMind — AI Ethical Shopping{% endblock %}</title>
+  {% load static %}
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-deep:      #0b120e;
+      --bg-mid:       #0f1a12;
+      --bg-card:      #141f17;
+      --bg-card2:     #192b1d;
+      --green-bright: #4ade80;
+      --green-muted:  #2d6a4f;
+      --green-pale:   #a7f3c1;
+      --amber:        #fbbf24;
+      --amber-pale:   #fef3c7;
+      --red-soft:     #f87171;
+      --text-primary: #e8f5ee;
+      --text-muted:   #8aaa94;
+      --text-dim:     #4a6856;
+      --border:       rgba(74, 222, 128, 0.12);
+      --border-hover: rgba(74, 222, 128, 0.3);
+      --glow:         rgba(74, 222, 128, 0.08);
+      --radius:       14px;
+      --radius-lg:    20px;
+      --font-display: 'Playfair Display', serif;
+      --font-body:    'DM Sans', sans-serif;
+      --font-mono:    'DM Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.7;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── ANIMATED BACKGROUND ─── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(46,107,68,0.18) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(74,222,128,0.06) 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── NOISE TEXTURE ─── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── NAVBAR ─── */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: 64px;
+      background: rgba(11,18,14,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .nav-logo {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--green-bright), #22c55e);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+
+    .nav-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .nav-title span { color: var(--green-bright); }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      padding: 0.4rem 0.9rem;
+      border-radius: 8px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: var(--green-bright);
+      background: var(--glow);
+    }
+
+    /* ─── MAIN CONTENT ─── */
+    .main {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* ─── CARDS ─── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: var(--border-hover);
+      box-shadow: 0 8px 40px rgba(74, 222, 128, 0.06);
+      transform: translateY(-2px);
+    }
+
+    /* ─── SCORE BADGE ─── */
+    .score-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      font-weight: 500;
+    }
+
+    .score-high  { background: rgba(74,222,128,0.15); color: var(--green-bright); border: 1px solid rgba(74,222,128,0.2); }
+    .score-mid   { background: rgba(251,191,36,0.12); color: var(--amber); border: 1px solid rgba(251,191,36,0.2); }
+    .score-low   { background: rgba(248,113,113,0.12); color: var(--red-soft); border: 1px solid rgba(248,113,113,0.2); }
+
+    /* ─── CERT TAG ─── */
+    .cert-tag {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: rgba(74,222,128,0.08);
+      color: var(--green-pale);
+      border: 1px solid rgba(74,222,128,0.15);
+    }
+
+    /* ─── PROGRESS BAR ─── */
+    .progress-wrap {
+      background: rgba(255,255,255,0.05);
+      border-radius: 100px;
+      height: 6px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      border-radius: 100px;
+      background: linear-gradient(90deg, var(--green-muted), var(--green-bright));
+      transition: width 0.8s ease;
+    }
+
+    /* ─── BUTTONS ─── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0.6rem 1.4rem;
+      border-radius: var(--radius);
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(34,197,94,0.25);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 28px rgba(34,197,94,0.4);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--green-bright);
+      border: 1px solid var(--border-hover);
+    }
+
+    .btn-outline:hover {
+      background: var(--glow);
+    }
+
+    /* ─── FORM ELEMENTS ─── */
+    .form-group { margin-bottom: 1rem; }
+
+    .form-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .form-control {
+      width: 100%;
+      background: var(--bg-mid);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.65rem 1rem;
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+      appearance: none;
+    }
+
+    .form-control:focus {
+      border-color: var(--green-bright);
+      box-shadow: 0 0 0 3px rgba(74,222,128,0.1);
+    }
+
+    .form-control::placeholder { color: var(--text-dim); }
+
+    /* ─── FOOTER ─── */
+    .footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.82rem;
+    }
+
+    .footer a { color: var(--green-muted); text-decoration: none; }
+
+    /* ─── UTIL ─── */
+    .text-green  { color: var(--green-bright); }
+    .text-amber  { color: var(--amber); }
+    .text-muted  { color: var(--text-muted); }
+    .text-mono   { font-family: var(--font-mono); }
+    .text-center { text-align: center; }
+    .flex        { display: flex; }
+    .items-center { align-items: center; }
+    .gap-2       { gap: 0.5rem; }
+    .gap-3       { gap: 0.75rem; }
+    .mt-1        { margin-top: 0.25rem; }
+    .mt-2        { margin-top: 0.5rem; }
+    .mt-3        { margin-top: 0.75rem; }
+    .mb-1        { margin-bottom: 0.25rem; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-in { animation: fadeUp 0.5s ease both; }
+
+    @media (max-width: 768px) {
+      .navbar { padding: 0 1rem; }
+      .main   { padding: 1.5rem 1rem 3rem; }
+      .nav-links { display: none; }
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a class="nav-brand" href="{% url 'shop_assistant:home' %}">
+    <div class="nav-logo">🌿</div>
+    <span class="nav-title">Eco<span>Mind</span></span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="{% url 'shop_assistant:home' %}" class="{% if page == 'home' %}active{% endif %}">Home</a></li>
+    <li><a href="{% url 'shop_assistant:recommend' %}" class="{% if page == 'recommend' %}active{% endif %}">Discover</a></li>
+    <li><a href="{% url 'shop_assistant:about' %}" class="{% if page == 'about' %}active{% endif %}">How It Works</a></li>
+  </ul>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <p>🌱 EcoMind AI — Ethical Shopping Assistant &nbsp;|&nbsp;
+     2026 @copyright &nbsp;|&nbsp;
+     <a href="{% url 'shop_assistant:about' %}">How the AI works</a>
+  </p>
+</footer>
+
+{% block extra_scripts %}{% endblock %}
+
+<!-- ═══════════════════════════════════════════════════════════
+     ECOMIND CHATBOT WIDGET  — floats on every page
+     ═══════════════════════════════════════════════════════════ -->
+<style>
+  /* ── FAB Button ── */
+  #eco-fab {
+    position: fixed;
+    bottom: 28px; right: 28px;
+    z-index: 9999;
+    width: 58px; height: 58px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 6px 28px rgba(34,197,94,0.45);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    outline: none;
+  }
+  #eco-fab:hover {
+    transform: scale(1.1);
+    box-shadow: 0 10px 36px rgba(34,197,94,0.6);
+  }
+  #eco-fab .fab-label {
+    position: absolute;
+    right: 68px; top: 50%;
+    transform: translateY(-50%);
+    background: #141f17;
+    border: 1px solid rgba(74,222,128,0.25);
+    color: #a7f3c1;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    padding: 5px 12px;
+    border-radius: 8px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  #eco-fab:hover .fab-label { opacity: 1; }
+
+  /* ── Chat Window ── */
+  #eco-chat {
+    position: fixed;
+    bottom: 100px; right: 28px;
+    z-index: 9998;
+    width: 390px;
+    max-height: 620px;
+    display: flex; flex-direction: column;
+    background: #0b120e;
+    border: 1px solid rgba(74,222,128,0.2);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(74,222,128,0.05);
+    transform: scale(0.9) translateY(20px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  #eco-chat.open {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    pointer-events: all;
+  }
+  @media (max-width: 480px) {
+    #eco-chat { width: calc(100vw - 24px); right: 12px; bottom: 90px; }
+    #eco-fab  { bottom: 18px; right: 18px; }
+  }
+
+  /* ── Chat Header ── */
+  .eco-chat-header {
+    padding: 1rem 1.2rem;
+    background: linear-gradient(135deg, #0f2e18, #0b1f12);
+    border-bottom: 1px solid rgba(74,222,128,0.15);
+    display: flex; align-items: center; gap: 0.75rem;
+    flex-shrink: 0;
+  }
+  .eco-chat-avatar {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; flex-shrink: 0;
+  }
+  .eco-chat-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #e8f5ee;
+  }
+  .eco-chat-status {
+    font-size: 0.7rem;
+    color: #4ade80;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .eco-chat-status::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: #4ade80;
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; } 50% { opacity: 0.3; }
+  }
+  .eco-close-btn {
+    margin-left: auto;
+    background: none; border: none;
+    color: #4a6856; font-size: 1.2rem;
+    cursor: pointer; padding: 4px;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+  .eco-close-btn:hover { color: #4ade80; }
+
+  /* ── Messages ── */
+  .eco-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex; flex-direction: column; gap: 0.75rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(74,222,128,0.2) transparent;
+  }
+  .eco-messages::-webkit-scrollbar { width: 4px; }
+  .eco-messages::-webkit-scrollbar-thumb { background: rgba(74,222,128,0.2); border-radius: 2px; }
+
+  /* ── Message Bubbles ── */
+  .eco-msg {
+    display: flex; gap: 0.5rem;
+    animation: fadeUp 0.3s ease both;
+  }
+  .eco-msg.user { flex-direction: row-reverse; }
+
+  .eco-msg-bubble {
+    max-width: 82%;
+    padding: 0.6rem 0.9rem;
+    border-radius: 14px;
+    font-size: 0.83rem;
+    line-height: 1.55;
+  }
+  .eco-msg.bot .eco-msg-bubble {
+    background: #141f17;
+    border: 1px solid rgba(74,222,128,0.12);
+    color: #e8f5ee;
+    border-radius: 4px 14px 14px 14px;
+    max-width: 95%;
+  }
+  .eco-msg.user .eco-msg-bubble {
+    background: linear-gradient(135deg, #166534, #15803d);
+    color: #fff;
+    border-radius: 14px 4px 14px 14px;
+  }
+
+  .eco-msg-icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .eco-msg.bot  .eco-msg-icon { background: #0f2e18; }
+  .eco-msg.user .eco-msg-icon { background: #166534; }
+
+  /* ── Typing Indicator ── */
+  .eco-typing {
+    display: flex; gap: 4px;
+    padding: 8px 12px;
+    background: #141f17;
+    border: 1px solid rgba(74,222,128,0.12);
+    border-radius: 4px 14px 14px 14px;
+    width: fit-content;
+  }
+  .eco-typing span {
+    width: 6px; height: 6px;
+    background: #4ade80;
+    border-radius: 50%;
+    animation: typing 1.2s infinite;
+  }
+  .eco-typing span:nth-child(2) { animation-delay: 0.2s; }
+  .eco-typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typing {
+    0%,60%,100% { transform: translateY(0); opacity: 0.4; }
+    30%          { transform: translateY(-5px); opacity: 1; }
+  }
+
+  /* ── Input Area ── */
+  .eco-input-area {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid rgba(74,222,128,0.12);
+    background: #0b120e;
+    display: flex; gap: 0.5rem; align-items: flex-end;
+    flex-shrink: 0;
+  }
+  #eco-input {
+    flex: 1;
+    background: #141f17;
+    border: 1px solid rgba(74,222,128,0.18);
+    border-radius: 12px;
+    padding: 0.55rem 0.9rem;
+    color: #e8f5ee;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.83rem;
+    outline: none;
+    resize: none;
+    max-height: 100px;
+    line-height: 1.5;
+    transition: border-color 0.2s;
+  }
+  #eco-input:focus { border-color: rgba(74,222,128,0.4); }
+  #eco-input::placeholder { color: #4a6856; }
+  #eco-send {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border: none; border-radius: 10px;
+    cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    font-size: 1rem;
+  }
+  #eco-send:hover { transform: scale(1.08); box-shadow: 0 4px 16px rgba(34,197,94,0.4); }
+  #eco-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* ── Suggestions strip ── */
+  .eco-suggestions {
+    display: flex; gap: 0.4rem; flex-wrap: wrap;
+    padding: 0 1rem 0.6rem;
+    border-top: none;
+  }
+  .eco-sug-chip {
+    background: rgba(74,222,128,0.07);
+    border: 1px solid rgba(74,222,128,0.18);
+    color: #8aaa94;
+    padding: 3px 10px; border-radius: 99px;
+    font-size: 0.7rem; cursor: pointer;
+    transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+  }
+  .eco-sug-chip:hover { background: rgba(74,222,128,0.15); color: #4ade80; }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(10px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+</style>
+
+<!-- FAB Button -->
+<button id="eco-fab" onclick="toggleChat()" aria-label="Ask EcoMind">
+  <span id="eco-fab-icon">🌿</span>
+  <span class="fab-label">Ask EcoMind</span>
+</button>
+
+<!-- Chat Window -->
+<div id="eco-chat" role="dialog" aria-label="EcoMind Chatbot">
+
+  <!-- Header -->
+  <div class="eco-chat-header">
+    <div class="eco-chat-avatar">🌿</div>
+    <div>
+      <div class="eco-chat-name">EcoMind Assistant</div>
+      <div class="eco-chat-status">Online · Ethical Shopping AI</div>
+    </div>
+    <button class="eco-close-btn" onclick="toggleChat()" aria-label="Close">✕</button>
+  </div>
+
+  <!-- Messages -->
+  <div class="eco-messages" id="eco-messages"></div>
+
+  <!-- Quick suggestions -->
+  <div class="eco-suggestions" id="eco-suggestions">
+    <button class="eco-sug-chip" onclick="setInput(this.textContent)">Organic food ₹300</button>
+    <button class="eco-sug-chip" onclick="setInput(this.textContent)">Fair trade clothing</button>
+    <button class="eco-sug-chip" onclick="setInput(this.textContent)">Low carbon kitchen</button>
+    <button class="eco-sug-chip" onclick="setInput(this.textContent)">Vegan personal care</button>
+  </div>
+
+  <!-- Input -->
+  <div class="eco-input-area">
+    <textarea id="eco-input" rows="1"
+      placeholder="e.g. organic breakfast under ₹200 with low carbon..."
+      onkeydown="handleKey(event)"
+      oninput="autoResize(this)"></textarea>
+    <button id="eco-send" onclick="sendMessage()" title="Send">➤</button>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  let chatOpen = false;
+  let isWaiting = false;
+
+  // ── Toggle chat window ──────────────────────────────────────
+  window.toggleChat = function() {
+    chatOpen = !chatOpen;
+    const chat = document.getElementById('eco-chat');
+    const icon = document.getElementById('eco-fab-icon');
+    chat.classList.toggle('open', chatOpen);
+    icon.textContent = chatOpen ? '✕' : '🌿';
+
+    if (chatOpen && document.getElementById('eco-messages').children.length === 0) {
+      addBotMessage(`<p>👋 Hello! I'm <strong style="color:#4ade80;">EcoMind</strong>, your ethical shopping guide.</p>
+        <p style="color:#8aaa94;font-size:0.82rem;margin-top:0.4rem;">
+          Tell me what you need — include your budget in ₹, category, and any ethical preferences like
+          <em>organic, fair trade, low carbon, vegan</em> or <em>certified</em>.
+        </p>
+        <p style="color:#a7f3c1;font-size:0.8rem;margin-top:0.5rem;">
+          Example: <em>"I want breakfast below ₹200, organic and certified"</em>
+        </p>`);
+    }
+    if (chatOpen) document.getElementById('eco-input').focus();
+  };
+
+  // ── Send message ───────────────────────────────────────────
+  window.sendMessage = function() {
+    const input = document.getElementById('eco-input');
+    const text  = input.value.trim();
+    if (!text || isWaiting) return;
+
+    addUserMessage(text);
+    input.value = '';
+    input.style.height = 'auto';
+    document.getElementById('eco-suggestions').style.display = 'none';
+    showTyping();
+    isWaiting = true;
+    document.getElementById('eco-send').disabled = true;
+
+    fetch('/api/chat/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify({ message: text })
+    })
+    .then(r => r.json())
+    .then(data => {
+      removeTyping();
+      if (data.html) {
+        addBotMessage(data.html);
+      } else {
+        addBotMessage('<p style="color:#f87171;">Something went wrong. Please try again.</p>');
+      }
+    })
+    .catch(() => {
+      removeTyping();
+      addBotMessage('<p style="color:#f87171;">Network error. Please check your connection.</p>');
+    })
+    .finally(() => {
+      isWaiting = false;
+      document.getElementById('eco-send').disabled = false;
+    });
+  };
+
+  // ── Key handler ────────────────────────────────────────────
+  window.handleKey = function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  // ── Auto-resize textarea ───────────────────────────────────
+  window.autoResize = function(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+  };
+
+  // ── Set input text from suggestion chip ───────────────────
+  window.setInput = function(text) {
+    const input = document.getElementById('eco-input');
+    input.value = text;
+    input.focus();
+    autoResize(input);
+    // Open chat if closed
+    if (!chatOpen) toggleChat();
+  };
+
+  // ── Add user bubble ────────────────────────────────────────
+  function addUserMessage(text) {
+    const msgs = document.getElementById('eco-messages');
+    const div = document.createElement('div');
+    div.className = 'eco-msg user';
+    div.innerHTML = `
+      <div class="eco-msg-bubble">${escHtml(text)}</div>
+      <div class="eco-msg-icon">👤</div>`;
+    msgs.appendChild(div);
+    scrollBottom();
+  }
+
+  // ── Add bot bubble ─────────────────────────────────────────
+  function addBotMessage(html) {
+    const msgs = document.getElementById('eco-messages');
+    const div = document.createElement('div');
+    div.className = 'eco-msg bot';
+    div.innerHTML = `
+      <div class="eco-msg-icon">🌿</div>
+      <div class="eco-msg-bubble">${html}</div>`;
+    msgs.appendChild(div);
+    scrollBottom();
+  }
+
+  // ── Typing indicator ───────────────────────────────────────
+  function showTyping() {
+    const msgs = document.getElementById('eco-messages');
+    const div = document.createElement('div');
+    div.className = 'eco-msg bot';
+    div.id = 'eco-typing-row';
+    div.innerHTML = `
+      <div class="eco-msg-icon">🌿</div>
+      <div class="eco-typing"><span></span><span></span><span></span></div>`;
+    msgs.appendChild(div);
+    scrollBottom();
+  }
+
+  function removeTyping() {
+    const t = document.getElementById('eco-typing-row');
+    if (t) t.remove();
+  }
+
+  // ── Scroll to bottom ───────────────────────────────────────
+  function scrollBottom() {
+    const msgs = document.getElementById('eco-messages');
+    setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 50);
+  }
+
+  // ── Escape HTML for user input ─────────────────────────────
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+})();
+    function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+</script>
+</body>
+</html>

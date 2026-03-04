@@ -1,0 +1,307 @@
+{% extends 'shop_assistant/base.html' %}
+{% block title %}How It Works — EcoMind AI{% endblock %}
+
+{% block extra_head %}
+<style>
+  .about-hero {
+    text-align: center;
+    padding: 3.5rem 0 2.5rem;
+  }
+  .about-hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.75rem;
+  }
+  .about-hero p { color: var(--text-muted); max-width: 550px; margin: 0 auto; }
+
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+  }
+
+  .tech-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    transition: all 0.3s;
+  }
+
+  .tech-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+  }
+
+  .tech-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+  .tech-name { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .tech-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.7; }
+  .tech-tag {
+    margin-top: 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--green-pale);
+    background: rgba(74,222,128,0.08);
+    border: 1px solid rgba(74,222,128,0.12);
+    padding: 2px 8px;
+    border-radius: 6px;
+    display: inline-block;
+  }
+
+  .pipeline {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    margin: 2rem 0;
+  }
+
+  .pipeline-title {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+  }
+
+  .pipeline-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .pipeline-step {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 1rem;
+    position: relative;
+  }
+
+  .pipeline-step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 19px; top: 40px; bottom: -1rem;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .step-num {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: rgba(74,222,128,0.1);
+    border: 1px solid rgba(74,222,128,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--green-bright);
+    font-weight: 600;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .step-body {
+    padding-bottom: 1.5rem;
+  }
+
+  .step-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .step-desc {
+    font-size: 0.84rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  .formula-box {
+    background: var(--bg-mid);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin: 2rem 0;
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    color: var(--green-pale);
+    line-height: 2;
+  }
+
+  .formula-box .comment { color: var(--text-dim); }
+  .formula-box .keyword { color: var(--amber); }
+  .formula-box .value   { color: var(--green-bright); }
+
+  .api-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    margin: 2rem 0;
+  }
+
+  .api-title {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+  }
+
+  .api-desc {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-bottom: 1.25rem;
+  }
+
+  .endpoint {
+    background: var(--bg-mid);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+  }
+
+  .method-badge {
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: rgba(74,222,128,0.15);
+    color: var(--green-bright);
+    flex-shrink: 0;
+  }
+
+  .endpoint-url { color: var(--text-muted); }
+  .endpoint-desc { color: var(--text-dim); margin-left: auto; font-size: 0.78rem; font-family: var(--font-body); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="about-hero animate-in">
+  <h1>How EcoMind AI Works</h1>
+  <p>A technical deep-dive into the machine learning models and data science powering your ethical shopping recommendations.</p>
+</div>
+
+<!-- TECH STACK -->
+<h2 style="font-family:var(--font-display); font-size:1.4rem; margin-bottom:0.75rem; animation: fadeUp 0.4s ease both;">🔬 Technology Stack</h2>
+<div class="tech-grid">
+  <div class="tech-card animate-in" style="animation-delay:0.05s">
+    <div class="tech-icon">🐼</div>
+    <div class="tech-name">Pandas</div>
+    <div class="tech-desc">Used to load, clean, and manipulate the product dataset. Handles filtering by category, budget, and keyword across 30+ products.</div>
+    <span class="tech-tag">pandas · DataFrame · filtering</span>
+  </div>
+  <div class="tech-card animate-in" style="animation-delay:0.1s">
+    <div class="tech-icon">🔢</div>
+    <div class="tech-name">NumPy</div>
+    <div class="tech-desc">Powers array operations for similarity scoring, score normalization, and the cosine similarity computation matrix.</div>
+    <span class="tech-tag">numpy · arrays · linear algebra</span>
+  </div>
+  <div class="tech-card animate-in" style="animation-delay:0.15s">
+    <div class="tech-icon">🤖</div>
+    <div class="tech-name">Scikit-learn</div>
+    <div class="tech-desc">Core ML library: RandomForestClassifier for ethical ratings, MinMaxScaler for normalization, cosine_similarity for product similarity.</div>
+    <span class="tech-tag">sklearn · RandomForest · cosine_similarity</span>
+  </div>
+  <div class="tech-card animate-in" style="animation-delay:0.2s">
+    <div class="tech-icon">🌐</div>
+    <div class="tech-name">Django</div>
+    <div class="tech-desc">Full-stack web framework serving the AI model through REST API endpoints and beautifully rendered HTML templates.</div>
+    <span class="tech-tag">django · views · templates · REST API</span>
+  </div>
+</div>
+
+<!-- SCORING FORMULA -->
+<div class="pipeline animate-in" style="animation-delay:0.25s">
+  <h3 class="pipeline-title">🧮 Composite Score Formula</h3>
+  <p style="font-size:0.875rem; color:var(--text-muted); margin-bottom:1.25rem;">
+    Every product receives a single composite ethical score, computed as a weighted average of three key dimensions:
+  </p>
+  <div class="formula-box">
+    <span class="comment"># EcoMind Composite Score (0–10)</span><br>
+    <span class="keyword">composite_score</span> = (<br>
+    &nbsp;&nbsp;<span class="value">eco_score</span> × <span class="keyword">0.40</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># 40% — environmental impact</span><br>
+    &nbsp;+ <span class="value">ethics_score</span> × <span class="keyword">0.40</span>&nbsp;&nbsp;&nbsp;<span class="comment"># 40% — labor & supply chain ethics</span><br>
+    &nbsp;+ <span class="value">(10 - carbon_footprint)</span> × <span class="keyword">0.20</span> <span class="comment"># 20% — low carbon = higher score</span><br>
+    )
+  </div>
+</div>
+
+<!-- ML PIPELINE -->
+<div class="pipeline animate-in" style="animation-delay:0.3s">
+  <h3 class="pipeline-title">⚙️ ML Pipeline</h3>
+  <div class="pipeline-steps">
+    <div class="pipeline-step">
+      <div class="step-num">01</div>
+      <div class="step-body">
+        <div class="step-title">Data Ingestion with Pandas</div>
+        <div class="step-desc">30 real-world ethical products loaded into a Pandas DataFrame. Each product has eco score, ethics score, carbon footprint, price, materials, and sustainability certifications (GOTS, B-Corp, Fair Trade, etc.).</div>
+      </div>
+    </div>
+    <div class="pipeline-step">
+      <div class="step-num">02</div>
+      <div class="step-body">
+        <div class="step-title">Feature Engineering</div>
+        <div class="step-desc">Composite score computed. Categories label-encoded with Scikit-learn LabelEncoder. Numerical features normalized via MinMaxScaler. Price tiers derived from budget ranges.</div>
+      </div>
+    </div>
+    <div class="pipeline-step">
+      <div class="step-num">03</div>
+      <div class="step-body">
+        <div class="step-title">RandomForest Training</div>
+        <div class="step-desc">A RandomForestClassifier (100 trees) is trained on [eco_score, ethics_score, carbon_footprint, price] to predict probability that a product is "highly ethical" (score ≥ 8.8). 80/20 train-test split.</div>
+      </div>
+    </div>
+    <div class="pipeline-step">
+      <div class="step-num">04</div>
+      <div class="step-body">
+        <div class="step-title">Content-Based Filtering</div>
+        <div class="step-desc">Cosine similarity (via NumPy + Scikit-learn) computed between normalized feature vectors to find similar products. This powers the "You Might Also Like" section.</div>
+      </div>
+    </div>
+    <div class="pipeline-step">
+      <div class="step-num">05</div>
+      <div class="step-body">
+        <div class="step-title">Django REST API</div>
+        <div class="step-desc">The AI model is exposed via Django views and JSON API endpoints. Filters (category, budget, keyword) are applied before ranking by composite score and returning results.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- API REFERENCE -->
+<div class="api-section animate-in" style="animation-delay:0.35s">
+  <h3 class="api-title">🔌 API Endpoints</h3>
+  <p class="api-desc">EcoMind exposes a REST API so you can integrate ethical recommendations into any app.</p>
+
+  <div class="endpoint">
+    <span class="method-badge">GET</span>
+    <span class="endpoint-url">/api/recommend/?category=Clothing&budget=100&keyword=organic</span>
+    <span class="endpoint-desc">AI recommendations</span>
+  </div>
+  <div class="endpoint">
+    <span class="method-badge">GET</span>
+    <span class="endpoint-url">/api/stats/</span>
+    <span class="endpoint-desc">Dashboard statistics</span>
+  </div>
+  <div class="endpoint">
+    <span class="method-badge">GET</span>
+    <span class="endpoint-url">/api/categories/</span>
+    <span class="endpoint-desc">All product categories</span>
+  </div>
+  <div class="endpoint">
+    <span class="method-badge">POST</span>
+    <span class="endpoint-url">/api/recommend/</span>
+    <span class="endpoint-desc">POST with JSON body</span>
+  </div>
+</div>
+
+{% endblock %}
