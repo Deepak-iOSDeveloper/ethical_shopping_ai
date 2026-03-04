@@ -154,3 +154,5 @@ This project demonstrates:
 - **Software Engineering**: Modular design, singleton pattern, clean separation of concerns
 
 Built for university AI/ML course project.
+Build with love by Deepak Kumar Behera
+
