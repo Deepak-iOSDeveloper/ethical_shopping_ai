@@ -272,7 +272,7 @@ def api_chat(request):
         '\nAfter all cards: <p class="elc-summary">Found X products matching your request.</p>'
     )
 
-    GEMINI_API_KEY = "AIzaSyDHEK91zP2XoCYrXvbSsgJ2E4aY6EnjYkk"
+    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
     gemini_url = (
         "https://generativelanguage.googleapis.com/v1beta/models/"
         "gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY
