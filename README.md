@@ -1,5 +1,7 @@
 # 🌿 EcoMind — AI-Driven Ethical Shopping Assistant
 
+### Project is now live at - (Railway Deployement service) - https://web-production-29da.up.railway.app/
+
 A complete AI-powered web application that recommends eco-friendly and ethical products using Machine Learning.
 
 ## 🧠 AI Model Architecture
