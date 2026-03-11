@@ -1,5 +1,7 @@
 # 🌿 EcoMind — AI-Driven Ethical Shopping Assistant
 
+### Project is now live at - (Railway Deployement service) - https://web-production-29da.up.railway.app/
+
 A complete AI-powered web application that recommends eco-friendly and ethical products using Machine Learning.
 
 ## 🧠 AI Model Architecture
@@ -135,7 +137,7 @@ POST /api/recommend/    (JSON body with same params)
 
 ## 📊 Dataset
 
-30 real-world ethical products from 15+ brands including:
+100+ real-world ethical products from 15+ brands including:
 Patagonia, Allbirds, Veja, Eileen Fisher, Nudie Jeans, Girlfriend Collective,
 Manduka, Lush, Equal Exchange, BioLite, and more.
 
@@ -149,8 +151,10 @@ Certifications covered: GOTS, B-Corp, Fair Trade, OEKO-TEX, COSMOS, FSC
 
 This project demonstrates:
 - **Data Science**: Pandas DataFrames, feature engineering, normalization
-- **Machine Learning**: Supervised classification, similarity-based recommendation
+- **Machine Learning**: Supervised classification, similarity-based recommendation, KMEANS clustering, Neural Networks
 - **Web Development**: Django MVC pattern, REST APIs, template rendering
 - **Software Engineering**: Modular design, singleton pattern, clean separation of concerns
 
 Built for university AI/ML course project.
+Build with love by Deepak Kumar Behera
+

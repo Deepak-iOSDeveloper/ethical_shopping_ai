@@ -372,8 +372,6 @@ def _score_row_against_filters(row, ethical_filters):
 @require_http_methods(["POST"])
 def api_chat(request):
     """
-    100% own pipeline chatbot — no external API.
-
     Step 1: Parse user message  → budget, category, ethical filters
     Step 2: Filter products     → from 203-product database
     Step 3: EcoMindNet scores   → predict ethical scores for results
