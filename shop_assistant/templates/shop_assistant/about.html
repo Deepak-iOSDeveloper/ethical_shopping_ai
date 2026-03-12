@@ -5,24 +5,63 @@
 <style>
   .about-hero {
     text-align: center;
-    padding: 3.5rem 0 2.5rem;
+    padding: 4rem 0 3rem;
+    position: relative;
+  }
+  .about-hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 300px;
+    background: radial-gradient(ellipse at center, rgba(74,222,128,0.06) 0%, transparent 70%);
+    pointer-events: none;
   }
   .about-hero h1 {
     font-family: var(--font-display);
-    font-size: clamp(2rem, 4vw, 3rem);
+    font-size: clamp(2.2rem, 4vw, 3.2rem);
     font-weight: 700;
     letter-spacing: -0.03em;
     margin-bottom: 0.75rem;
+    background: linear-gradient(135deg, #e8f5ee 0%, #4ade80 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
-  .about-hero p { color: var(--text-muted); max-width: 550px; margin: 0 auto; }
+  .about-hero p { color: var(--text-muted); max-width: 580px; margin: 0 auto 1.5rem; line-height: 1.7; font-size: 0.95rem; }
+  .hero-badges { display: flex; justify-content: center; gap: 0.6rem; flex-wrap: wrap; }
+  .hero-badge {
+    background: rgba(74,222,128,0.08);
+    border: 1px solid rgba(74,222,128,0.18);
+    color: var(--green-pale);
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+  }
+
+  .section-heading {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 2.5rem 0 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .section-heading::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+    margin-left: 0.75rem;
+  }
 
   .tech-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 1rem;
-    margin: 2rem 0;
+    margin: 1.25rem 0 2.5rem;
   }
-
   .tech-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -30,19 +69,18 @@
     padding: 1.5rem;
     transition: all 0.3s;
   }
-
   .tech-card:hover {
     border-color: var(--border-hover);
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
   }
-
   .tech-icon { font-size: 2rem; margin-bottom: 0.75rem; }
-  .tech-name { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
-  .tech-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.7; }
+  .tech-name { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .tech-desc { font-size: 0.83rem; color: var(--text-muted); line-height: 1.7; }
   .tech-tag {
     margin-top: 0.75rem;
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     color: var(--green-pale);
     background: rgba(74,222,128,0.08);
     border: 1px solid rgba(74,222,128,0.12);
@@ -51,256 +89,498 @@
     display: inline-block;
   }
 
-  .pipeline {
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0 2.5rem;
+  }
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    text-align: center;
+    transition: border-color 0.3s;
+  }
+  .stat-card:hover { border-color: rgba(74,222,128,0.3); }
+  .stat-value {
+    font-family: var(--font-mono);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--green-bright);
+    line-height: 1;
+    margin-bottom: 0.35rem;
+  }
+  .stat-label { font-size: 0.75rem; color: var(--text-muted); }
+
+  .arch-box {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: 2rem;
-    margin: 2rem 0;
+    margin: 1.25rem 0 2.5rem;
   }
-
-  .pipeline-title {
-    font-family: var(--font-display);
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin-bottom: 1.5rem;
-  }
-
-  .pipeline-steps {
+  .arch-title { font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; margin-bottom: 1.5rem; }
+  .arch-diagram {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: 0;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
   }
-
-  .pipeline-step {
-    display: grid;
-    grid-template-columns: 40px 1fr;
-    gap: 1rem;
-    position: relative;
-  }
-
-  .pipeline-step:not(:last-child)::before {
-    content: '';
-    position: absolute;
-    left: 19px; top: 40px; bottom: -1rem;
-    width: 2px;
-    background: var(--border);
-  }
-
-  .step-num {
-    width: 40px; height: 40px;
-    border-radius: 12px;
+  .arch-layer { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+  .arch-nodes { display: flex; flex-direction: column; gap: 4px; }
+  .arch-node {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid rgba(74,222,128,0.4);
     background: rgba(74,222,128,0.1);
-    border: 1px solid rgba(74,222,128,0.2);
-    display: flex; align-items: center; justify-content: center;
-    font-family: var(--font-mono);
-    font-size: 0.82rem;
-    color: var(--green-bright);
-    font-weight: 600;
-    flex-shrink: 0;
-    position: relative;
-    z-index: 1;
   }
+  .arch-node.active { background: rgba(74,222,128,0.4); border-color: var(--green-bright); }
+  .arch-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); text-align: center; white-space: nowrap; }
+  .arch-label strong { color: var(--green-pale); display: block; font-size: 0.72rem; }
+  .arch-arrow { color: rgba(74,222,128,0.3); font-size: 1.2rem; padding: 0 0.5rem; flex-shrink: 0; align-self: center; margin-bottom: 1.5rem; }
+  .arch-heads { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 1.5rem; }
+  .arch-head { background: var(--bg-mid); border: 1px solid rgba(74,222,128,0.12); border-radius: 8px; padding: 0.6rem 0.75rem; font-size: 0.75rem; }
+  .arch-head-name { color: var(--green-pale); font-weight: 700; margin-bottom: 2px; }
+  .arch-head-desc { color: var(--text-dim); font-size: 0.7rem; }
 
-  .step-body {
-    padding-bottom: 1.5rem;
+  .formula-wrap {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    margin: 1.25rem 0 2.5rem;
   }
-
-  .step-title {
-    font-weight: 700;
-    font-size: 0.95rem;
-    margin-bottom: 0.25rem;
-  }
-
-  .step-desc {
-    font-size: 0.84rem;
-    color: var(--text-muted);
-    line-height: 1.7;
-  }
-
+  .formula-wrap-title { font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .formula-wrap-desc { font-size: 0.84rem; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.7; }
   .formula-box {
     background: var(--bg-mid);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 1.25rem 1.5rem;
-    margin: 2rem 0;
     font-family: var(--font-mono);
-    font-size: 0.88rem;
+    font-size: 0.85rem;
     color: var(--green-pale);
-    line-height: 2;
+    line-height: 2.1;
+    overflow-x: auto;
   }
-
   .formula-box .comment { color: var(--text-dim); }
   .formula-box .keyword { color: var(--amber); }
   .formula-box .value   { color: var(--green-bright); }
+  .formula-box .fn      { color: #93c5fd; }
+  .weight-chips { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.25rem; }
+  .weight-chip { background: var(--bg-mid); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.9rem; font-size: 0.78rem; }
+  .weight-chip-label { color: var(--text-muted); font-size: 0.7rem; margin-bottom: 2px; }
+  .weight-chip-val { color: var(--green-bright); font-family: var(--font-mono); font-weight: 700; }
+
+  .pipeline {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    margin: 1.25rem 0 2.5rem;
+  }
+  .pipeline-title { font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .pipeline-subtitle { font-size: 0.84rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.7; }
+  .pipeline-steps { display: flex; flex-direction: column; gap: 0; }
+  .pipeline-step { display: grid; grid-template-columns: 40px 1fr; gap: 1rem; position: relative; }
+  .pipeline-step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 19px; top: 40px; bottom: -1rem;
+    width: 2px;
+    background: linear-gradient(to bottom, rgba(74,222,128,0.3), rgba(74,222,128,0.05));
+  }
+  .step-num {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: rgba(74,222,128,0.1);
+    border: 1px solid rgba(74,222,128,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--green-bright);
+    font-weight: 700;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+  .step-body { padding-bottom: 1.75rem; }
+  .step-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.3rem; }
+  .step-desc { font-size: 0.83rem; color: var(--text-muted); line-height: 1.75; }
+  .step-tag {
+    display: inline-block;
+    margin-top: 0.5rem;
+    background: rgba(74,222,128,0.06);
+    border: 1px solid rgba(74,222,128,0.1);
+    color: var(--green-pale);
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 0.68rem;
+    font-family: var(--font-mono);
+  }
 
   .api-section {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: 2rem;
-    margin: 2rem 0;
+    margin: 1.25rem 0 2.5rem;
   }
-
-  .api-title {
-    font-family: var(--font-display);
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin-bottom: 0.75rem;
-  }
-
-  .api-desc {
-    font-size: 0.875rem;
-    color: var(--text-muted);
-    margin-bottom: 1.25rem;
-  }
-
+  .api-title { font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .api-desc { font-size: 0.84rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.7; }
   .endpoint {
     background: var(--bg-mid);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 1rem 1.25rem;
-    margin-bottom: 0.75rem;
+    padding: 0.9rem 1.25rem;
+    margin-bottom: 0.6rem;
     display: flex;
     align-items: center;
     gap: 0.75rem;
     font-family: var(--font-mono);
-    font-size: 0.82rem;
+    font-size: 0.8rem;
+    transition: border-color 0.2s;
+    flex-wrap: wrap;
   }
-
-  .method-badge {
-    padding: 2px 8px;
-    border-radius: 5px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    background: rgba(74,222,128,0.15);
+  .endpoint:hover { border-color: rgba(74,222,128,0.25); }
+  .method-badge { padding: 2px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: 700; flex-shrink: 0; }
+  .method-get  { background: rgba(74,222,128,0.15); color: var(--green-bright); }
+  .method-post { background: rgba(251,191,36,0.15); color: var(--amber); }
+  .endpoint-url { color: var(--text-muted); flex: 1; }
+  .endpoint-desc { color: var(--text-dim); font-size: 0.75rem; font-family: var(--font-body); }
+  .endpoint-new {
+    font-size: 0.62rem;
+    background: rgba(74,222,128,0.12);
     color: var(--green-bright);
-    flex-shrink: 0;
+    border: 1px solid rgba(74,222,128,0.2);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-weight: 700;
   }
-
-  .endpoint-url { color: var(--text-muted); }
-  .endpoint-desc { color: var(--text-dim); margin-left: auto; font-size: 0.78rem; font-family: var(--font-body); }
 </style>
 {% endblock %}
 
 {% block content %}
 
+<!-- ── HERO ─────────────────────────────────────────────── -->
 <div class="about-hero animate-in">
   <h1>How EcoMind AI Works</h1>
-  <p>A technical deep-dive into the machine learning models and data science powering your ethical shopping recommendations.</p>
+  <p>A technical deep-dive into the machine learning models, neural network architecture, and data science pipeline powering your ethical shopping recommendations — built entirely from scratch.</p>
+  <div class="hero-badges">
+    <span class="hero-badge">🧠 Custom Neural Network</span>
+    <span class="hero-badge">📊 203 Products</span>
+    <span class="hero-badge">95.1% Accuracy</span>
+    <span class="hero-badge">⚡ Zero External APIs</span>
+    <span class="hero-badge">🌿 100% Own Code</span>
+  </div>
 </div>
 
-<!-- TECH STACK -->
-<h2 style="font-family:var(--font-display); font-size:1.4rem; margin-bottom:0.75rem; animation: fadeUp 0.4s ease both;">🔬 Technology Stack</h2>
+<!-- ── MODEL STATS ─────────────────────────────────────── -->
+<h2 class="section-heading animate-in" style="animation-delay:0.05s">📈 Model Performance</h2>
+<div class="stats-bar animate-in" style="animation-delay:0.1s">
+  <div class="stat-card">
+    <div class="stat-value">95.1%</div>
+    <div class="stat-label">Carbon Classification Accuracy</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">0.29</div>
+    <div class="stat-label">Eco Score MAE (out of 10)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">0.30</div>
+    <div class="stat-label">Ethics Score MAE (out of 10)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">1,218</div>
+    <div class="stat-label">Augmented Training Samples</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">120</div>
+    <div class="stat-label">Training Epochs</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">203</div>
+    <div class="stat-label">Ethical Products in Database</div>
+  </div>
+</div>
+
+<!-- ── TECH STACK ──────────────────────────────────────── -->
+<h2 class="section-heading animate-in" style="animation-delay:0.1s">🔬 Technology Stack</h2>
 <div class="tech-grid">
   <div class="tech-card animate-in" style="animation-delay:0.05s">
     <div class="tech-icon">🐼</div>
     <div class="tech-name">Pandas</div>
-    <div class="tech-desc">Used to load, clean, and manipulate the product dataset. Handles filtering by category, budget, and keyword across 30+ products.</div>
+    <div class="tech-desc">Used to load, clean, and manipulate the product dataset. Handles filtering by category, budget, and keyword across 200+ products.</div>
     <span class="tech-tag">pandas · DataFrame · filtering</span>
   </div>
   <div class="tech-card animate-in" style="animation-delay:0.1s">
     <div class="tech-icon">🔢</div>
     <div class="tech-name">NumPy</div>
-    <div class="tech-desc">Powers array operations for similarity scoring, score normalization, and the cosine similarity computation matrix.</div>
-    <span class="tech-tag">numpy · arrays · linear algebra</span>
+    <div class="tech-desc">Powers all array operations inside our neural network — matrix multiplications, gradient calculations, weight updates, and score normalisation.</div>
+    <span class="tech-tag">numpy · arrays · linear algebra · gradients</span>
   </div>
   <div class="tech-card animate-in" style="animation-delay:0.15s">
     <div class="tech-icon">🤖</div>
     <div class="tech-name">Scikit-learn</div>
-    <div class="tech-desc">Core ML library: RandomForestClassifier for ethical ratings, MinMaxScaler for normalization, cosine_similarity for product similarity.</div>
+    <div class="tech-desc">Core ML library: RandomForestClassifier for ethical ratings, MinMaxScaler for normalisation, cosine_similarity for product similarity matching.</div>
     <span class="tech-tag">sklearn · RandomForest · cosine_similarity</span>
+  </div>
+  <div class="tech-card animate-in" style="animation-delay:0.25s">
+    <div class="tech-icon">🧠</div>
+    <div class="tech-name">EcoMind Neural Network</div>
+    <div class="tech-desc">Our own multi-output neural network built entirely from scratch using NumPy — no PyTorch, no TensorFlow. Three hidden layers (256→128→64) with Batch Normalisation, Dropout regularisation, and four specialised output heads predicting eco score, ethics score, carbon level, and ethical tags simultaneously.</div>
+    <span class="tech-tag">custom neural net · from scratch · multi-output · NumPy</span>
+  </div>
+  <div class="tech-card animate-in" style="animation-delay:0.4s">
+    <div class="tech-icon">📊</div>
+    <div class="tech-name">Batch Normalisation</div>
+    <div class="tech-desc">Custom BatchNorm layer stabilises training by normalising layer inputs to zero mean and unit variance. Includes learnable gamma and beta parameters updated via Adam, dramatically speeding up convergence.</div>
+    <span class="tech-tag">batch norm · normalisation · gamma · beta</span>
+  </div>
+  <div class="tech-card animate-in" style="animation-delay:0.55s">
+    <div class="tech-icon">🏷️</div>
+    <div class="tech-name">Multi-Label Classifier</div>
+    <div class="tech-desc">Sigmoid output head predicts five ethical tags simultaneously — Organic, Fair Trade, Vegan, Recycled, Natural — as independent binary probabilities. Uses Binary Cross-Entropy loss with a 0.4 confidence threshold.</div>
+    <span class="tech-tag">multi-label · sigmoid · BCE loss · ethical tags</span>
+  </div>
+  <div class="tech-card animate-in" style="animation-delay:0.75s">
+    <div class="tech-icon">🔄</div>
+    <div class="tech-name">Learning Rate Scheduler</div>
+    <div class="tech-desc">Custom step-decay scheduler reduces learning rate across four stages (0.001 → 0.0005 → 0.0002 → 0.00005) over 120 training epochs — preventing overshooting while ensuring convergence to the global minimum.</div>
+    <span class="tech-tag">lr scheduler · step decay · convergence · training</span>
   </div>
   <div class="tech-card animate-in" style="animation-delay:0.2s">
     <div class="tech-icon">🌐</div>
     <div class="tech-name">Django</div>
-    <div class="tech-desc">Full-stack web framework serving the AI model through REST API endpoints and beautifully rendered HTML templates.</div>
+    <div class="tech-desc">Full-stack web framework serving the AI model through REST API endpoints — /api/chat/, /api/predict/, /api/recommend/ — with beautifully rendered HTML templates.</div>
     <span class="tech-tag">django · views · templates · REST API</span>
   </div>
 </div>
 
-<!-- SCORING FORMULA -->
-<div class="pipeline animate-in" style="animation-delay:0.25s">
-  <h3 class="pipeline-title">🧮 Composite Score Formula</h3>
-  <p style="font-size:0.875rem; color:var(--text-muted); margin-bottom:1.25rem;">
-    Every product receives a single composite ethical score, computed as a weighted average of three key dimensions:
-  </p>
-  <div class="formula-box">
-    <span class="comment"># EcoMind Composite Score (0–10)</span><br>
-    <span class="keyword">composite_score</span> = (<br>
-    &nbsp;&nbsp;<span class="value">eco_score</span> × <span class="keyword">0.40</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># 40% — environmental impact</span><br>
-    &nbsp;+ <span class="value">ethics_score</span> × <span class="keyword">0.40</span>&nbsp;&nbsp;&nbsp;<span class="comment"># 40% — labor & supply chain ethics</span><br>
-    &nbsp;+ <span class="value">(10 - carbon_footprint)</span> × <span class="keyword">0.20</span> <span class="comment"># 20% — low carbon = higher score</span><br>
-    )
+<!-- ── NEURAL NETWORK ARCHITECTURE ────────────────────── -->
+<h2 class="section-heading animate-in" style="animation-delay:0.15s">🏗️ Neural Network Architecture</h2>
+<div class="arch-box animate-in" style="animation-delay:0.2s">
+  <div class="arch-title">EcoMindNet — Multi-Output Deep Neural Network</div>
+  <div class="arch-diagram">
+    <div class="arch-layer">
+      <div class="arch-nodes">
+        <div class="arch-node active"></div>
+        <div class="arch-node active"></div>
+        <div class="arch-node active"></div>
+        <div class="arch-node active"></div>
+        <div class="arch-node active"></div>
+        <div class="arch-node active"></div>
+        <div style="text-align:center;color:var(--text-dim);font-size:0.6rem;margin-top:2px;">···</div>
+      </div>
+      <div class="arch-label"><strong>Input</strong>512 TF-IDF<br>features</div>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-layer">
+      <div class="arch-nodes">
+        <div class="arch-node active"></div>
+        <div class="arch-node active"></div>
+        <div class="arch-node active"></div>
+        <div class="arch-node active"></div>
+        <div class="arch-node active"></div>
+        <div style="text-align:center;color:var(--text-dim);font-size:0.6rem;margin-top:2px;">···</div>
+      </div>
+      <div class="arch-label"><strong>Hidden 1</strong>256 neurons<br>LeakyReLU + BN</div>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-layer">
+      <div class="arch-nodes">
+        <div class="arch-node active"></div>
+        <div class="arch-node active"></div>
+        <div class="arch-node active"></div>
+        <div class="arch-node active"></div>
+        <div style="text-align:center;color:var(--text-dim);font-size:0.6rem;margin-top:2px;">···</div>
+      </div>
+      <div class="arch-label"><strong>Hidden 2</strong>128 neurons<br>LeakyReLU + BN</div>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-layer">
+      <div class="arch-nodes">
+        <div class="arch-node active"></div>
+        <div class="arch-node active"></div>
+        <div class="arch-node active"></div>
+        <div style="text-align:center;color:var(--text-dim);font-size:0.6rem;margin-top:2px;">···</div>
+      </div>
+      <div class="arch-label"><strong>Hidden 3</strong>64 neurons<br>LeakyReLU + BN</div>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-layer">
+      <div class="arch-nodes" style="gap:6px;">
+        <div class="arch-node active" style="width:18px;height:18px;background:rgba(74,222,128,0.6);"></div>
+        <div class="arch-node active" style="width:18px;height:18px;background:rgba(74,222,128,0.6);"></div>
+        <div class="arch-node active" style="width:18px;height:18px;background:rgba(251,191,36,0.5);border-color:var(--amber);"></div>
+        <div class="arch-node active" style="width:18px;height:18px;background:rgba(147,197,253,0.4);border-color:#93c5fd;"></div>
+      </div>
+      <div class="arch-label"><strong>Output</strong>4 heads</div>
+    </div>
+  </div>
+  <div class="arch-heads">
+    <div class="arch-head">
+      <div class="arch-head-name">🌿 Eco Score Head</div>
+      <div class="arch-head-desc">Linear activation → regression (0–10) · MSE loss</div>
+    </div>
+    <div class="arch-head">
+      <div class="arch-head-name">⚖️ Ethics Score Head</div>
+      <div class="arch-head-desc">Linear activation → regression (0–10) · MSE loss</div>
+    </div>
+    <div class="arch-head">
+      <div class="arch-head-name">💨 Carbon Level Head</div>
+      <div class="arch-head-desc">Softmax → 4 classes (ultra_low / low / moderate / high) · Cross-entropy loss</div>
+    </div>
+    <div class="arch-head">
+      <div class="arch-head-name">🏷️ Ethical Tags Head</div>
+      <div class="arch-head-desc">Sigmoid → 5 binary labels (organic, fair_trade, vegan, recycled, natural) · BCE loss</div>
+    </div>
   </div>
 </div>
 
-<!-- ML PIPELINE -->
+<!-- ── COMPOSITE SCORE FORMULA ────────────────────────── -->
+<h2 class="section-heading animate-in" style="animation-delay:0.2s">🧮 Composite Score Formula</h2>
+<div class="formula-wrap animate-in" style="animation-delay:0.25s">
+  <div class="formula-wrap-title">How every product gets its overall ethical score</div>
+  <div class="formula-wrap-desc">Every product receives a single composite ethical score (0–10) — a weighted combination of three independently assessed dimensions. The EcoMind Neural Network predicts eco and ethics scores from product text, while carbon footprint is measured directly.</div>
+  <div class="formula-box">
+    <span class="comment"># ── EcoMind Composite Score (0–10) ──────────────────</span><br>
+    <span class="keyword">composite_score</span> = (<br>
+    &nbsp;&nbsp;<span class="value">eco_score</span>            × <span class="keyword">0.40</span>&nbsp;&nbsp;<span class="comment"># 40% · environmental impact</span><br>
+    &nbsp;+ <span class="value">ethics_score</span>         × <span class="keyword">0.40</span>&nbsp;&nbsp;<span class="comment"># 40% · labour &amp; supply chain ethics</span><br>
+    &nbsp;+ <span class="value">(10 - carbon_footprint)</span> × <span class="keyword">0.20</span>&nbsp;&nbsp;<span class="comment"># 20% · low carbon = higher score</span><br>
+    )<br><br>
+    <span class="comment"># ── EcoMindNet Overall Score (chatbot) ──────────────</span><br>
+    <span class="keyword">overall_score</span> = (<br>
+    &nbsp;&nbsp;<span class="value">eco_score</span>            × <span class="keyword">0.45</span><br>
+    &nbsp;+ <span class="value">ethics_score</span>         × <span class="keyword">0.45</span><br>
+    &nbsp;+ <span class="fn">max</span>(<span class="value">3 - carbon_level</span>, <span class="keyword">0</span>) × <span class="keyword">0.50</span>&nbsp;&nbsp;<span class="comment"># carbon class bonus</span><br>
+    &nbsp;+ <span class="fn">len</span>(<span class="value">ethical_tags</span>)  × <span class="keyword">0.10</span>&nbsp;&nbsp;<span class="comment"># bonus per ethical tag</span><br>
+    )
+  </div>
+  <div class="weight-chips">
+    <div class="weight-chip"><div class="weight-chip-label">Eco Score weight</div><div class="weight-chip-val">40%</div></div>
+    <div class="weight-chip"><div class="weight-chip-label">Ethics Score weight</div><div class="weight-chip-val">40%</div></div>
+    <div class="weight-chip"><div class="weight-chip-label">Carbon weight</div><div class="weight-chip-val">20%</div></div>
+    <div class="weight-chip"><div class="weight-chip-label">Carbon classes</div><div class="weight-chip-val">4 levels</div></div>
+    <div class="weight-chip"><div class="weight-chip-label">Ethical tag types</div><div class="weight-chip-val">5 labels</div></div>
+    <div class="weight-chip"><div class="weight-chip-label">Score range</div><div class="weight-chip-val">0 – 10</div></div>
+  </div>
+</div>
+
+<!-- ── FULL PIPELINE ───────────────────────────────────── -->
+<h2 class="section-heading animate-in" style="animation-delay:0.25s">⚙️ Full AI Pipeline</h2>
 <div class="pipeline animate-in" style="animation-delay:0.3s">
-  <h3 class="pipeline-title">⚙️ ML Pipeline</h3>
+  <div class="pipeline-title">From raw text to ethical product recommendation</div>
+  <div class="pipeline-subtitle">Every chatbot query passes through this 8-step pipeline — entirely on your own server, zero external API calls.</div>
   <div class="pipeline-steps">
     <div class="pipeline-step">
       <div class="step-num">01</div>
       <div class="step-body">
         <div class="step-title">Data Ingestion with Pandas</div>
-        <div class="step-desc">30 real-world ethical products loaded into a Pandas DataFrame. Each product has eco score, ethics score, carbon footprint, price, materials, and sustainability certifications (GOTS, B-Corp, Fair Trade, etc.).</div>
+        <div class="step-desc">203 real-world ethical products loaded into a Pandas DataFrame. Each product carries eco score, ethics score, carbon footprint, price, materials, sustainability certifications (GOTS, B-Corp, Fair Trade, USDA Organic), and a rich product description.</div>
+        <span class="step-tag">pandas · DataFrame · 203 products</span>
       </div>
     </div>
     <div class="pipeline-step">
       <div class="step-num">02</div>
       <div class="step-body">
         <div class="step-title">Feature Engineering</div>
-        <div class="step-desc">Composite score computed. Categories label-encoded with Scikit-learn LabelEncoder. Numerical features normalized via MinMaxScaler. Price tiers derived from budget ranges.</div>
+        <div class="step-desc">Composite ethical score computed from weighted formula. Categories label-encoded with Scikit-learn LabelEncoder. Numerical features normalised via MinMaxScaler to [0,1] range. Price converted from USD to INR (₹) for Indian users.</div>
+        <span class="step-tag">sklearn · MinMaxScaler · LabelEncoder · composite score</span>
       </div>
     </div>
     <div class="pipeline-step">
       <div class="step-num">03</div>
       <div class="step-body">
-        <div class="step-title">RandomForest Training</div>
-        <div class="step-desc">A RandomForestClassifier (100 trees) is trained on [eco_score, ethics_score, carbon_footprint, price] to predict probability that a product is "highly ethical" (score ≥ 8.8). 80/20 train-test split.</div>
+        <div class="step-title">TF-IDF Text Vectorisation</div>
+        <div class="step-desc">Custom TF-IDF vectoriser converts product descriptions, materials, certifications, and names into 512-dimensional numerical feature vectors. Bigram support means phrases like "fair trade" and "organic cotton" are understood as single semantic units.</div>
+        <span class="step-tag">tfidf · bigrams · 512 features · text → numbers</span>
       </div>
     </div>
     <div class="pipeline-step">
       <div class="step-num">04</div>
       <div class="step-body">
-        <div class="step-title">Content-Based Filtering</div>
-        <div class="step-desc">Cosine similarity (via NumPy + Scikit-learn) computed between normalized feature vectors to find similar products. This powers the "You Might Also Like" section.</div>
+        <div class="step-title">Data Augmentation</div>
+        <div class="step-desc">Training dataset expanded 6× from 203 to 1,218 samples using random word dropout (20% of description words removed per sample), Gaussian noise on numeric scores (±0.15 standard deviation), and description shuffling — giving the model broader generalisation without external data.</div>
+        <span class="step-tag">augmentation · word dropout · gaussian noise · 1,218 samples</span>
       </div>
     </div>
     <div class="pipeline-step">
       <div class="step-num">05</div>
       <div class="step-body">
-        <div class="step-title">Django REST API</div>
-        <div class="step-desc">The AI model is exposed via Django views and JSON API endpoints. Filters (category, budget, keyword) are applied before ranking by composite score and returning results.</div>
+        <div class="step-title">EcoMindNet Neural Network Training</div>
+        <div class="step-desc">The neural network trains for 120 epochs with mini-batches of 32 samples. Adam optimiser with step-decay learning rate schedule. Backpropagation computes gradients through all layers via chain rule. Best weights saved automatically when validation loss improves. Final result: 95.1% carbon accuracy, 0.29 MAE on eco scores.</div>
+        <span class="step-tag">120 epochs · Adam · backprop · best-model saving</span>
+      </div>
+    </div>
+    <div class="pipeline-step">
+      <div class="step-num">06</div>
+      <div class="step-body">
+        <div class="step-title">RandomForest Ethical Rating</div>
+        <div class="step-desc">A separate RandomForestClassifier (100 decision trees) trained on [eco_score, ethics_score, carbon_footprint, price] predicts the probability that a product qualifies as "highly ethical" (score ≥ 8.8). This percentage is shown on every product card. 80/20 train-test split.</div>
+        <span class="step-tag">RandomForest · 100 trees · ethical probability · 80/20 split</span>
+      </div>
+    </div>
+    <div class="pipeline-step">
+      <div class="step-num">07</div>
+      <div class="step-body">
+        <div class="step-title">Content-Based Similarity Filtering</div>
+        <div class="step-desc">Cosine similarity computed between normalised feature vectors powers the "You Might Also Like" section on each product page. Products closest in ethical profile — not just category — are surfaced as similar recommendations.</div>
+        <span class="step-tag">cosine similarity · content-based filtering · similar products</span>
+      </div>
+    </div>
+    <div class="pipeline-step">
+      <div class="step-num">08</div>
+      <div class="step-body">
+        <div class="step-title">NLP Intent Parser + Intent Guard</div>
+        <div class="step-desc">Custom rule-based NLP engine parses every chatbot message — extracting budget in ₹, product categories, and ethical filters using regex and keyword dictionaries. A multi-layer Intent Guard with 1,000+ signal keywords blocks off-topic, political, vulgar, and harmful queries before any product search runs.</div>
+        <span class="step-tag">NLP · regex · intent detection · content safety · 1000+ signals</span>
       </div>
     </div>
   </div>
 </div>
 
-<!-- API REFERENCE -->
-<div class="api-section animate-in" style="animation-delay:0.35s">
-  <h3 class="api-title">🔌 API Endpoints</h3>
-  <p class="api-desc">EcoMind exposes a REST API so you can integrate ethical recommendations into any app.</p>
-
+<!-- ── API REFERENCE ───────────────────────────────────── -->
+<h2 class="section-heading animate-in" style="animation-delay:0.35s">🔌 API Endpoints</h2>
+<div class="api-section animate-in" style="animation-delay:0.4s">
+  <div class="api-title">REST API Reference</div>
+  <div class="api-desc">EcoMind exposes a full REST API — every feature of the website is accessible programmatically. All endpoints are served entirely by your own Django backend with zero third-party dependencies.</div>
   <div class="endpoint">
-    <span class="method-badge">GET</span>
-    <span class="endpoint-url">/api/recommend/?category=Clothing&budget=100&keyword=organic</span>
-    <span class="endpoint-desc">AI recommendations</span>
+    <span class="method-badge method-get">GET</span>
+    <span class="endpoint-url">/api/recommend/?category=Clothing&amp;budget=500&amp;keyword=organic</span>
+    <span class="endpoint-desc">AI product recommendations</span>
   </div>
   <div class="endpoint">
-    <span class="method-badge">GET</span>
+    <span class="method-badge method-post">POST</span>
+    <span class="endpoint-url">/api/recommend/</span>
+    <span class="endpoint-desc">Recommendations via JSON body</span>
+  </div>
+  <div class="endpoint">
+    <span class="method-badge method-post">POST</span>
+    <span class="endpoint-url">/api/chat/</span>
+    <span class="endpoint-desc">EcoMind AI chatbot · natural language query</span>
+    <span class="endpoint-new">CHATBOT</span>
+  </div>
+  <div class="endpoint">
+    <span class="method-badge method-post">POST</span>
+    <span class="endpoint-url">/api/predict/</span>
+    <span class="endpoint-desc">EcoMindNet ethical score prediction for any product</span>
+    <span class="endpoint-new">OWN LLM</span>
+  </div>
+  <div class="endpoint">
+    <span class="method-badge method-get">GET</span>
     <span class="endpoint-url">/api/stats/</span>
     <span class="endpoint-desc">Dashboard statistics</span>
   </div>
   <div class="endpoint">
-    <span class="method-badge">GET</span>
+    <span class="method-badge method-get">GET</span>
     <span class="endpoint-url">/api/categories/</span>
-    <span class="endpoint-desc">All product categories</span>
-  </div>
-  <div class="endpoint">
-    <span class="method-badge">POST</span>
-    <span class="endpoint-url">/api/recommend/</span>
-    <span class="endpoint-desc">POST with JSON body</span>
+    <span class="endpoint-desc">All available product categories</span>
   </div>
 </div>
 

@@ -10,7 +10,7 @@ SECRET_KEY = 'django-insecure-ethical-shopping-ai-project-2024-change-in-product
 
 DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['www.ecomindshop.online', 'ecomind.shop', '*']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -77,3 +77,9 @@ GEMINI_API_KEY = "AIzaSyDHEK91zP2XoCYrXvbSsgJ2E4aY6EnjYkk"
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATIC_URL = '/static/'
+
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://www.ecomindshop.online',
+    'https://ecomindshop.online',
+]
