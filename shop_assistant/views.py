@@ -548,6 +548,7 @@ def api_chat(request):
 
     # 4. Off-topic — non-shopping queries
     off_topic_signals = [
+        "marry", "woman", "man", "married", "when", "how",
         "Pakistan", "pakistan", "north korea", "america", "israel", "nato", "china", "south korea", "russia", "ukrain"
         # tech/general knowledge
         "weather", "temperature", "news", "sports", "cricket", "football",
