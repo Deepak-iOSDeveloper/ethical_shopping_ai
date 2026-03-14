@@ -372,6 +372,8 @@ def _score_row_against_filters(row, ethical_filters):
 @require_http_methods(["POST"])
 def api_chat(request):
     """
+    100% own pipeline chatbot — no external API.
+
     Step 1: Parse user message  → budget, category, ethical filters
     Step 2: Filter products     → from 203-product database
     Step 3: EcoMindNet scores   → predict ethical scores for results
@@ -434,73 +436,6 @@ def api_chat(request):
         "constitution", "war", "military", "army", "protest", "revolution",
         "abortion", "gun", "religion", "hindu", "muslim", "christian",
         "temple", "mosque", "church", "caste", "reservation",
-        # Leaders
-        "Trump", "Modi", "Putin", "Xi Jinping", "Macron", "Starmer", "Netanyahu",
-        "Zelenskyy", "Lula", "Milei", "Kim Jong Un", "Ayatollah", "Pezeshkian",
-        "kim jung un", "kim jong un", "narendra", "rahul", "gandhi", "jawahar", "sunia", "samaj", "badi", "party",
-
-        # Parties & Orgs
-        "BJP", "Congress Party", "Tories", "Labour", "CCP", "NATO", "UNSC", "G7",
-        "BRICS", "European Union", "Hezbollah", "Hamas", "Taliban", "RSS",
-
-        # Issues & Conflicts
-        "Gaza", "West Bank", "Taiwan Strait", "Ukraine War", "Red Sea Crisis",
-        "Sanctions", "Tariffs", "Gerrymandering", "Sovereignty", "Secession",
-        "Immigration", "Refugee", "Climate Accord", "Cyberwarfare", "Propaganda",
-
-        # Countries (High Political Context)
-        "Taiwan", "Iran", "Israel", "Palestine", "Ukraine", "Russia", "North Korea",
-        "Venezuela", "Syria", "Sudan", "Myanmar", "China", "India", "USA",
-    # A-E
-    "abrogation", "absolutism", "abstention", "accountability", "activism", "adjudication",
-    "administration", "adversary", "advocacy", "agenda", "alderman", "allegiance", "alliance",
-    "amnesty", "anarchy", "annexation", "anti-clericalism", "apartheid", "appeasement",
-    "apportionment", "appropriation", "aristocracy", "armistice", "asylum", "austerity",
-    "authoritarianism", "autocracy", "autonomy", "backbencher", "ballot", "balkanization",
-    "belligerent", "bicameral", "bilateralism", "bill", "bipartisan", "bloc", "border",
-    "brinkmanship", "bureaucracy", "by-election", "cabinet", "campaign", "capitalism",
-    "caucus", "censure", "centralism", "chancellor", "charter", "checks and balances",
-    "citizenship", "civil liberties", "civil rights", "civil society", "cloture",
-    "coalition", "collectivism", "colonialism", "communism", "confederation",
-    "constituency", "constitution", "consulate", "containment", "convention", "corruption",
-    "cosmopolitanism", "coup d'état", "decentralization", "decolonization", "decree",
-    "deficit", "delegation", "demagogue", "democracy", "democratization", "deportation",
-    "deregulation", "despotism", "detente", "deterrence", "devolution", "dictatorship",
-    "diplomacy", "disarmament", "disenfranchisement", "dissident", "dissolution",
-    "doctrine", "dogma", "domestic policy", "dovish", "electorate", "embargo", "emigration",
-    "enfranchisement", "envoy", "espionage", "establishment", "ethics", "ethnicity",
-    "executive", "exile", "exit poll", "expansionism", "extradition", "extremism",
-
-    # F-N
-    "faction", "fascism", "federalism", "filibuster", "fiscal", "foreign policy",
-    "franchise", "fundamentalism", "geopolitics", "gerrymandering", "globalism",
-    "governance", "grassroots", "guerrilla", "hard power", "hegemony", "hierarchy",
-    "ideology", "impeachment", "imperialism", "inauguration", "incumbent", "indemnity",
-    "independence", "indoctrination", "initiative", "insurgency", "integration",
-    "interdependence", "interim", "interventionism", "isolationism", "jingoism",
-    "judicial review", "judiciary", "junta", "jurisdiction", "knightly", "laissez-faire",
-    "lawmaker", "left-wing", "legislation", "legislature", "legitimacy", "liberalism",
-    "libertarianism", "lobbyist", "local government", "majoritarianism", "mandate",
-    "manifesto", "marginal seat", "martial law", "marxism", "mayor", "militarism",
-    "minister", "minority", "monarchy", "multilateralism", "municipality", "nationalism",
-    "nationalization", "nativism", "naturalization", "negotiation", "neutrality",
-    "nihilism", "nomination", "non-alignment", "non-intervention", "normalization",
-
-    # O-Z
-    "oligarchy", "opposition", "ordinance", "pacifism", "parliament", "partisan",
-    "patriotism", "patronage", "petition", "platform", "plebiscite", "pluralism",
-    "plutocracy", "policy", "politburo", "populism", "portfolio", "prerogative",
-    "presidency", "primary", "privatization", "proclamation", "progressive",
-    "propaganda", "proportional", "prorogation", "protectorate", "protocol", "proxy",
-    "psephology", "public sector", "purges", "quorum", "radicalization", "ratification",
-    "reactionary", "realpolitik", "redistricting", "referendum", "reform", "refugee",
-    "regime", "regulation", "republic", "reservation", "resolution", "revisionism",
-    "revolution", "rhetoric", "right-wing", "sanctions", "secession", "secularism",
-    "sedition", "segregation", "senate", "separation of powers", "sharia", "socialism",
-    "sovereignty", "speaker", "sphere of influence", "statism", "statute", "suffrage",
-    "summit", "supranational", "surveillance", "theocracy", "totalitarianism", "treaty",
-    "tribalism", "tyranny", "unilateralism", "unitary state", "uprising", "urbanization",
-    "veto", "voter turnout", "welfare state", "whip", "writ", "xenophobia", "zionism"
     ]
     if any(p in text_lower for p in political_words):
         html = (
@@ -548,8 +483,6 @@ def api_chat(request):
 
     # 4. Off-topic — non-shopping queries
     off_topic_signals = [
-        "marry", "woman", "man", "married", "when", "how",
-        "Pakistan", "pakistan", "north korea", "america", "israel", "nato", "china", "south korea", "russia", "ukrain"
         # tech/general knowledge
         "weather", "temperature", "news", "sports", "cricket", "football",
         "movie", "song", "music", "recipe", "cook", "joke", "poem", "story",
@@ -566,196 +499,6 @@ def api_chat(request):
         # finance
         "stock", "crypto", "bitcoin", "invest", "share market", "trading",
         "loan", "emi", "bank", "insurance",
-        # ── Weather & Nature ──────────────────────────────────────
-        "weather", "temperature", "forecast", "rain", "sunny", "cloudy", "humidity",
-        "wind", "storm", "tornado", "hurricane", "earthquake", "flood", "drought",
-        "snowfall", "hailstorm", "thunder", "lightning", "climate change", "global warming",
-        "monsoon", "season", "winter", "summer", "spring", "autumn", "celsius", "fahrenheit",
-
-        # ── News & Current Events ─────────────────────────────────
-        "news", "headline", "breaking news", "latest news", "today news", "current events",
-        "newspaper", "journalist", "reporter", "media", "press", "broadcast", "editorial",
-        "bbc", "cnn", "ndtv", "times of india", "hindustan times", "the hindu", "aaj tak",
-
-        # ── Sports ────────────────────────────────────────────────
-        "cricket", "football", "soccer", "basketball", "tennis", "badminton", "hockey",
-        "volleyball", "baseball", "rugby", "golf", "swimming", "athletics", "marathon",
-        "ipl", "world cup", "premier league", "la liga", "bundesliga", "nba", "nfl",
-        "fifa", "icc", "bcci", "olympics", "commonwealth games", "asian games",
-        "match", "tournament", "championship", "league", "stadium", "wicket", "goal",
-        "score", "batsman", "bowler", "striker", "goalkeeper", "referee", "umpire",
-        "virat kohli", "rohit sharma", "dhoni", "sachin", "messi", "ronaldo", "federer",
-        "nadal", "djokovic", "neymar", "mbappé", "lebron", "serena williams",
-        "medal", "trophy", "gold medal", "silver medal", "bronze medal",
-
-        # ── Movies & Entertainment ────────────────────────────────
-        "movie", "film", "cinema", "actor", "actress", "director", "bollywood",
-        "hollywood", "netflix", "amazon prime", "hotstar", "disney plus", "hulu",
-        "web series", "season", "episode", "trailer", "review", "box office",
-        "oscar", "grammy", "filmfare", "bafta", "golden globe", "emmy",
-        "srk", "shah rukh", "salman khan", "aamir khan", "deepika", "priyanka",
-        "ranveer", "ranbir", "alia bhatt", "tom cruise", "brad pitt", "leonardo",
-        "animated", "cartoon", "anime", "manga", "superhero", "marvel", "dc comics",
-        "avengers", "spider-man", "batman", "superman", "ironman",
-
-        # ── Music ─────────────────────────────────────────────────
-        "song", "music", "album", "playlist", "lyrics", "singer", "rapper",
-        "band", "concert", "spotify", "youtube music", "gaana", "saavn",
-        "arijit singh", "shreya ghoshal", "ar rahman", "taylor swift", "ed sheeran",
-        "drake", "eminem", "billie eilish", "weeknd", "beyonce", "rihanna",
-        "pop", "rock", "jazz", "classical", "hip hop", "rap", "edm", "lo-fi",
-        "guitar", "piano", "drums", "violin", "beats", "remix", "cover song",
-        "music video", "music album", "chart topper",
-
-        # ── Food Recipes ──────────────────────────────────────────
-        "recipe", "cook", "cooking", "bake", "baking", "how to make", "ingredients",
-        "dish", "cuisine", "meal", "breakfast recipe", "lunch recipe", "dinner recipe",
-        "biryani recipe", "pasta recipe", "pizza recipe", "burger recipe", "cake recipe",
-        "chef", "kitchen tips", "food blog", "calories", "nutrition facts",
-        "protein content", "how many calories", "diet plan", "keto", "intermittent fasting",
-
-        # ── Jokes & Entertainment ─────────────────────────────────
-        "joke", "funny", "meme", "prank", "comedy", "laugh", "hilarious",
-        "tell me a joke", "make me laugh", "roast", "sarcasm", "riddle",
-        "knock knock", "pun", "one liner", "stand up comedy",
-
-        # ── Creative Writing ──────────────────────────────────────
-        "poem", "poetry", "story", "write a", "write me", "essay", "paragraph",
-        "speech", "letter", "email draft", "cover letter", "application letter",
-        "creative writing", "fiction", "novel", "short story", "haiku", "sonnet",
-        "rhyme", "limerick", "caption", "quote", "motivational quote", "slogan",
-
-        # ── General Knowledge ─────────────────────────────────────
-        "capital of", "who is", "what is the", "tell me about", "explain",
-        "define", "meaning of", "definition", "history of", "origin of",
-        "biography", "born in", "founded by", "invented by", "discovered by",
-        "who invented", "when was", "how old is", "how tall is", "how far",
-        "distance between", "population of", "area of", "currency of",
-        "national animal", "national bird", "national flower", "flag of",
-        "president of", "prime minister of", "capital city",
-
-        # ── Language & Translation ────────────────────────────────
-        "translate", "translation", "in hindi", "in english", "in tamil",
-        "in telugu", "in marathi", "in bengali", "in french", "in spanish",
-        "in arabic", "in chinese", "in japanese", "synonym", "antonym",
-        "grammar", "spell check", "correct my", "proofread",
-
-        # ── Mathematics ───────────────────────────────────────────
-        "math", "maths", "calculate", "calculation", "solve", "equation",
-        "algebra", "geometry", "calculus", "trigonometry", "statistics",
-        "percentage", "percentage of", "square root", "cube root", "factorial",
-        "prime number", "fibonacci", "probability", "matrix", "derivative",
-        "integral", "differential", "addition", "subtraction", "multiplication",
-        "division", "fraction", "decimal", "binary", "hexadecimal",
-
-        # ── Science ───────────────────────────────────────────────
-        "physics", "chemistry", "biology", "science", "hypothesis", "theory",
-        "experiment", "periodic table", "element", "atom", "molecule", "electron",
-        "proton", "neutron", "nucleus", "dna", "rna", "cell", "photosynthesis",
-        "gravity", "newton", "einstein", "quantum", "relativity", "black hole",
-        "solar system", "planet", "galaxy", "universe", "big bang", "evolution",
-        "darwin", "mendel", "genetics", "chromosome",
-
-        # ── Coding & Technology ───────────────────────────────────
-        "code", "coding", "program", "programming", "python", "java", "javascript",
-        "html", "css", "react", "angular", "vue", "nodejs", "django", "flask",
-        "sql", "database", "algorithm", "data structure", "api", "rest api",
-        "machine learning", "deep learning", "neural network", "chatgpt", "ai model",
-        "openai", "gemini", "llm", "gpt", "debug", "error fix", "stack overflow",
-        "github", "git", "docker", "kubernetes", "cloud", "aws", "azure", "devops",
-        "cybersecurity", "hacking", "linux", "terminal", "bash", "command line",
-        "software", "hardware", "operating system", "windows", "macos", "ubuntu",
-        "app development", "ios", "android", "flutter", "swift", "kotlin",
-
-        # ── Vehicles ──────────────────────────────────────────────
-        "car", "bike", "petrol", "diesel", "motorcycle", "vehicle", "automobile",
-        "truck", "bus", "train", "metro", "auto rickshaw", "taxi", "uber",
-        "ola", "rapido", "electric vehicle", "ev", "tesla", "tata nexon",
-        "honda", "toyota", "bmw", "mercedes", "audi", "hyundai", "maruti",
-        "mahindra", "bajaj", "royal enfield", "ktm", "yamaha", "suzuki",
-        "engine", "horsepower", "mileage", "gear", "clutch", "brake",
-        "tyre", "fuel", "cng", "hybrid car", "scooter", "cycle",
-
-        # ── Travel & Tourism ──────────────────────────────────────
-        "flight", "hotel", "travel", "trip", "tour", "vacation", "holiday",
-        "visa", "passport", "booking", "airbnb", "makemytrip", "goibibo",
-        "irctc", "train ticket", "bus ticket", "flight ticket", "itinerary",
-        "tourist place", "destination", "resort", "hostel", "check in",
-        "check out", "luggage", "backpack trip", "road trip", "cruise",
-        "goa", "kerala", "rajasthan", "manali", "shimla", "ooty", "darjeeling",
-        "paris", "london", "dubai", "singapore", "thailand", "bali", "maldives",
-        "new york", "tokyo", "sydney", "rome", "barcelona",
-
-        # ── Health & Medical ──────────────────────────────────────
-        "doctor", "medicine", "hospital", "disease", "symptom", "cure",
-        "covid", "vaccine", "tablet", "prescription", "diagnosis", "treatment",
-        "surgery", "operation", "therapy", "physiotherapy", "blood test",
-        "fever", "headache", "cold", "flu", "infection", "allergy",
-        "diabetes", "cancer", "blood pressure", "heart attack", "stroke",
-        "asthma", "thyroid", "cholesterol", "weight loss", "bmi",
-        "calorie deficit", "gym workout", "exercise routine", "yoga pose",
-        "meditation technique", "mental health tips", "anxiety treatment",
-        "depression", "psychiatrist", "psychologist",
-
-        # ── Finance & Banking ─────────────────────────────────────
-        "stock", "crypto", "bitcoin", "invest", "share market", "trading",
-        "loan", "emi", "bank", "insurance", "mutual fund", "sip", "fd",
-        "rd", "ppf", "nps", "ipo", "sensex", "nifty", "nasdaq", "dow jones",
-        "portfolio", "dividend", "compound interest", "simple interest",
-        "tax", "income tax", "gst return", "itr filing", "pan card", "aadhaar",
-        "credit card", "debit card", "upi", "paytm", "phonepe", "gpay",
-        "neft", "rtgs", "imps", "account number", "ifsc", "swift code",
-        "inflation", "recession", "gdp", "repo rate", "rbi", "sebi",
-        "zerodha", "groww", "upstox", "angel broking", "hedge fund",
-
-        # ── Education & Career ────────────────────────────────────
-        "study", "exam", "test", "quiz", "syllabus", "notes", "lecture",
-        "university", "college", "school", "jee", "neet", "upsc", "gate",
-        "cat", "gmat", "gre", "ielts", "toefl", "sat", "scholarship",
-        "admission", "fees", "degree", "diploma", "certificate", "internship",
-        "job", "resume", "cv", "interview", "salary", "appraisal", "promotion",
-        "linkedin", "naukri", "indeed", "glassdoor", "placement",
-
-        # ── Relationships & Personal ──────────────────────────────
-        "girlfriend", "boyfriend", "marriage", "wedding", "divorce", "breakup",
-        "relationship advice", "dating", "tinder", "bumble", "propose",
-        "love letter", "anniversary", "valentine", "friendship",
-        "family problem", "parent issue", "sibling fight", "loneliness",
-        "how to impress", "how to talk to", "how to make friends",
-
-        # ── Astrology & Superstition ──────────────────────────────
-        "horoscope", "zodiac", "astrology", "kundli", "rashifal", "numerology",
-        "tarot", "palm reading", "vastu", "feng shui", "lucky number",
-        "lucky colour", "gemstone", "superstition", "black magic",
-
-        # ── Gaming ────────────────────────────────────────────────
-        "game", "gaming", "pubg", "free fire", "bgmi", "fortnite", "minecraft",
-        "gta", "call of duty", "valorant", "lol", "dota", "chess online",
-        "playstation", "xbox", "nintendo", "steam", "esports", "twitch",
-        "streamer", "youtuber", "content creator",
-
-        # ── Social Media ──────────────────────────────────────────
-        "instagram", "facebook", "twitter", "snapchat", "tiktok", "reddit",
-        "whatsapp", "telegram", "discord", "pinterest", "tumblr", "quora",
-        "follower", "like", "comment", "share", "viral", "trending", "hashtag",
-        "influencer", "reel", "story", "post", "dm", "block", "unfollow",
-
-        # ── Legal ─────────────────────────────────────────────────
-        "lawyer", "advocate", "legal advice", "court", "judge", "police",
-        "fir", "complaint", "bail", "arrest", "law", "constitution",
-        "rights", "act", "section", "ipc", "high court", "supreme court",
-        "property dispute", "divorce case", "cybercrime",
-
-        # ── Random / Miscellaneous ────────────────────────────────
-        "how are you", "what are you", "are you human", "are you robot",
-        "who made you", "who created you", "where are you from",
-        "what is your name", "how old are you", "do you have feelings",
-        "can you think", "are you conscious", "pass time", "bored",
-        "good night", "good afternoon", "thank you", "thanks", "bye",
-        "goodbye", "see you", "take care", "ok cool", "nice", "wow",
-        "amazing", "awesome", "interesting", "really", "seriously",
-        # out of syllabus
-        "girlfriend", "boyfriend", "mother", "father", "sister", "relationship", "gift", "nothing"
     ]
     if any(o in text_lower for o in off_topic_signals):
         # Make sure it's truly off-topic and not accidentally matching a product word
@@ -764,93 +507,6 @@ def api_chat(request):
             "ethical", "carbon", "certified", "natural", "vegan", "fair trade",
             "clothing", "food", "kitchen", "personal care", "footwear",
             "under", "below", "rupees", "price", "budget",
-            # ── Original ──────────────────────────────────────────────
-            "product", "buy", "shop", "organic", "eco", "sustainable",
-            "ethical", "carbon", "certified", "natural", "vegan", "fair trade",
-            "clothing", "food", "kitchen", "personal care", "footwear",
-            "under", "below", "rupees", "price", "budget",
-
-            # ── Ethical & Sustainability Terms ────────────────────────
-            "ethical", "ethically", "eco-friendly", "environmentally friendly",
-            "planet friendly", "earth friendly", "green product", "green brand",
-            "conscious", "conscious shopping", "conscious consumer", "responsible",
-            "responsible sourcing", "responsible brand", "sustainable brand",
-            "sustainability", "sustainably made", "sustainably sourced",
-            "low impact", "zero impact", "minimal impact", "planet positive",
-            "carbon neutral", "carbon negative", "carbon offset", "carbon footprint",
-            "carbon free", "low carbon", "ultra low carbon", "net zero",
-            "climate friendly", "climate conscious", "eco score", "ethics score",
-
-            # ── Certifications ────────────────────────────────────────
-            "certified", "certification", "gots", "oeko tex", "bluesign",
-            "fair trade certified", "fairtrade", "b corp", "b-corp",
-            "usda organic", "cosmos organic", "ecocert", "fsc certified",
-            "rainforest alliance", "cruelty free", "leaping bunny",
-            "peta approved", "non gmo", "non-gmo verified", "soil association",
-            "demeter", "ifoam", "eu organic", "india organic",
-
-            # ── Eco Materials ─────────────────────────────────────────
-            "organic cotton", "recycled cotton", "recycled polyester",
-            "recycled plastic", "upcycled", "upcycled material", "reclaimed",
-            "bamboo", "hemp", "linen", "jute", "cork", "seaweed", "lyocell",
-            "tencel", "modal", "wool", "merino wool", "alpaca", "silk",
-            "natural fiber", "natural material", "plant based material",
-            "biodegradable", "compostable", "plastic free", "zero plastic",
-            "ocean plastic", "recycled ocean plastic", "post consumer",
-            "post consumer recycled", "pre consumer recycled",
-
-            # ── Product Categories ────────────────────────────────────
-            "clothing", "apparel", "fashion", "outfit", "wear", "shirt",
-            "tshirt", "t-shirt", "jeans", "trouser", "dress", "skirt",
-            "jacket", "hoodie", "sweater", "activewear", "sportswear",
-            "swimwear", "underwear", "socks", "scarf", "hat", "cap",
-            "food", "snack", "breakfast", "lunch", "dinner", "meal",
-            "grocery", "pantry", "staple", "grain", "cereal", "muesli",
-            "granola", "oats", "quinoa", "lentil", "pulse", "seed",
-            "nut", "dried fruit", "tea", "coffee", "herbal tea",
-            "supplement", "protein powder", "superfood",
-            "personal care", "skincare", "haircare", "body care",
-            "face wash", "shampoo", "conditioner", "moisturiser", "serum",
-            "sunscreen", "deodorant", "toothpaste", "toothbrush", "soap",
-            "body wash", "lotion", "lip balm", "face mask", "toner",
-            "kitchen", "cookware", "utensil", "container", "storage",
-            "reusable bag", "lunch box", "water bottle", "flask",
-            "beeswax wrap", "silicone bag", "compost bin", "reusable straw",
-            "cleaning", "detergent", "dish soap", "laundry", "surface cleaner",
-            "footwear", "shoes", "sandals", "boots", "sneakers", "slippers",
-            "baby", "baby product", "baby care", "toy", "diaper",
-            "home decor", "candle", "diffuser", "bedding", "linen",
-            "stationery", "notebook", "pen", "paper", "office supply",
-            "pet", "pet food", "pet care", "dog", "cat",
-            "electronics", "gadget", "charger", "solar", "solar panel",
-
-            # ── Shopping Intent Words ─────────────────────────────────
-            "buy", "purchase", "order", "get", "find", "show", "recommend",
-            "suggest", "looking for", "need", "want", "search", "explore",
-            "discover", "browse", "compare", "best", "top", "good",
-            "affordable", "cheap", "expensive", "budget", "price", "cost",
-            "under", "below", "within", "less than", "more than", "around",
-            "rupees", "rs", "inr", "₹", "usd", "dollar",
-
-            # ── Ethical Shopping Specific ─────────────────────────────
-            "ethical shopping", "conscious shopping", "green shopping",
-            "sustainable shopping", "eco shopping", "responsible shopping",
-            "slow fashion", "fast fashion alternative", "ethical brand",
-            "green brand", "eco brand", "sustainable brand", "conscious brand",
-            "zero waste", "zero waste product", "package free", "packaging free",
-            "minimal packaging", "plastic free packaging", "refillable",
-            "refill", "reusable", "reuse", "reduce", "recycle",
-            "circular economy", "circular product", "upcycle",
-            "supply chain", "transparent brand", "ethical supply chain",
-            "fair wage", "fair labour", "worker rights", "safe factory",
-
-            # ── EcoMind Specific ──────────────────────────────────────
-            "ecomind", "eco mind", "eco score", "ethics score", "composite score",
-            "sustainability score", "ethical rating", "green rating",
-            "carbon rating", "environmental rating", "ai recommendation",
-            "recommend me", "what should i buy", "which product",
-            "best eco product", "most ethical", "least carbon",
-            "highest rated", "top rated ethical", "best certified",
         ]
         is_shopping = any(s in text_lower for s in shopping_signals)
         if not is_shopping:
@@ -1050,3 +706,653 @@ def api_chat(request):
         "status": "ok",
         "engine": "ecomind_llm" if llm_ready else "ecomind_rule_based"
     })
+
+
+# ═══════════════════════════════════════════════════════════
+# PRODUCT SCANNER — Scan any product via EcoMindNet
+# ═══════════════════════════════════════════════════════════
+
+def scan(request):
+    """Render the product scanner page."""
+    return render(request, 'shop_assistant/scan.html', {'page': 'scan'})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_scan(request):
+    """
+    POST /api/scan/
+    Accepts product details from user, runs through EcoMindNet,
+    returns eco_score, ethics_score, carbon_level, tags, overall score.
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    name        = data.get("name", "").strip()
+    brand       = data.get("brand", "").strip()
+    category    = data.get("category", "General").strip()
+    description = data.get("description", "").strip()
+    materials   = data.get("materials", "").strip()
+    cert        = data.get("cert", "").strip()
+    price       = data.get("price", "")
+
+    if not name:
+        return JsonResponse({"error": "Product name is required."}, status=400)
+
+    # Build enriched description for EcoMindNet
+    enriched = f"{name} {brand} {category} {description} {materials} {cert}".strip()
+
+    try:
+        sys.path.insert(0, BASE_DIR)
+        from ecomind_llm.predictor import get_predictor
+        predictor = get_predictor()
+
+        payload = {
+            "name": name,
+            "brand": brand,
+            "category": category,
+            "description": enriched,
+            "materials": materials,
+            "sustainability_cert": cert,
+        }
+        result = predictor.predict(payload)
+
+        eco     = round(float(result.get("eco_score", 5.0)), 1)
+        ethics  = round(float(result.get("ethics_score", 5.0)), 1)
+        carbon  = result.get("carbon_level", "moderate")
+        tags    = result.get("tags", [])
+        conf    = round(float(result.get("confidence", 50.0)), 1)  # predictor already returns % value
+
+        # Carbon numeric mapping
+        carbon_map = {"ultra_low": 0, "low": 1, "moderate": 2, "high": 3}
+        carbon_val = carbon_map.get(carbon, 2)
+
+        # Overall score
+        overall = round(
+            (eco * 0.45) + (ethics * 0.45)
+            + max(3 - carbon_val, 0) * 0.5
+            + len(tags) * 0.1,
+            1
+        )
+        overall = min(overall, 10.0)
+
+        # Verdict
+        if overall >= 8.5:
+            verdict = "Excellent"
+            verdict_color = "#4ade80"
+            verdict_icon = "🌟"
+            verdict_msg = "This product meets the highest ethical and environmental standards."
+        elif overall >= 7.0:
+            verdict = "Good"
+            verdict_color = "#86efac"
+            verdict_icon = "✅"
+            verdict_msg = "A solid ethical choice with good eco credentials."
+        elif overall >= 5.5:
+            verdict = "Average"
+            verdict_color = "#fbbf24"
+            verdict_icon = "⚠️"
+            verdict_msg = "Some ethical aspects are present but there is room to improve."
+        elif overall >= 4.0:
+            verdict = "Below Average"
+            verdict_color = "#f97316"
+            verdict_icon = "📉"
+            verdict_msg = "This product has limited ethical or eco-friendly credentials."
+        else:
+            verdict = "Poor"
+            verdict_color = "#f87171"
+            verdict_icon = "❌"
+            verdict_msg = "This product scores low on ethical and environmental metrics."
+
+        # Carbon label
+        carbon_labels = {
+            "ultra_low": {"label": "Ultra Low", "color": "#4ade80", "kg": "< 0.5 kg CO₂"},
+            "low":       {"label": "Low",        "color": "#86efac", "kg": "0.5 – 1.5 kg CO₂"},
+            "moderate":  {"label": "Moderate",   "color": "#fbbf24", "kg": "1.5 – 4 kg CO₂"},
+            "high":      {"label": "High",        "color": "#f87171", "kg": "> 4 kg CO₂"},
+        }
+        carbon_info = carbon_labels.get(carbon, carbon_labels["moderate"])
+
+        return JsonResponse({
+            "status": "ok",
+            "engine": "ecomind_llm",
+            "product": {
+                "name": name,
+                "brand": brand,
+                "category": category,
+            },
+            "scores": {
+                "eco_score": eco,
+                "ethics_score": ethics,
+                "overall_score": overall,
+                "confidence": conf,
+            },
+            "carbon": {
+                "level": carbon,
+                "label": carbon_info["label"],
+                "color": carbon_info["color"],
+                "estimate": carbon_info["kg"],
+            },
+            "tags": tags,
+            "verdict": {
+                "label": verdict,
+                "color": verdict_color,
+                "icon": verdict_icon,
+                "message": verdict_msg,
+            }
+        })
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+# ═══════════════════════════════════════════════════════════
+# BARCODE LOOKUP — Fetches product info from Open Food Facts
+# ═══════════════════════════════════════════════════════════
+
+import urllib.request
+import urllib.error
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_barcode_lookup(request):
+    """
+    POST /api/barcode-lookup/
+    Looks up barcode on Open Food Facts / Open Beauty Facts / Open Products Facts
+    Returns product name, brand, category, ingredients, certifications.
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    barcode = str(data.get("barcode", "")).strip()
+    if not barcode:
+        return JsonResponse({"error": "Barcode is required."}, status=400)
+
+    # Try multiple Open Facts databases in order
+    databases = [
+        ("food",    f"https://world.openfoodfacts.org/api/v2/product/{barcode}.json"),
+        ("beauty",  f"https://world.openbeautyfacts.org/api/v2/product/{barcode}.json"),
+        ("product", f"https://world.openproductsfacts.org/api/v2/product/{barcode}.json"),
+    ]
+
+    product_data = None
+    source_db    = None
+
+    for db_name, url in databases:
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={"User-Agent": "EcoMindAI/1.0 (deepak@ecomind.app)"}
+            )
+            with urllib.request.urlopen(req, timeout=6) as resp:
+                result = json.loads(resp.read().decode())
+                if result.get("status") == 1 and result.get("product"):
+                    product_data = result["product"]
+                    source_db = db_name
+                    break
+        except Exception:
+            continue
+
+    if not product_data:
+        return JsonResponse({
+            "found": False,
+            "message": "Product not found in our databases. Please fill in the details manually."
+        })
+
+    p = product_data
+
+    # Extract fields
+    name        = p.get("product_name") or p.get("product_name_en") or ""
+    brand       = p.get("brands", "").split(",")[0].strip()
+    ingredients = p.get("ingredients_text") or p.get("ingredients_text_en") or ""
+    labels      = p.get("labels", "") or p.get("labels_tags", "")
+    categories  = p.get("categories", "") or p.get("categories_en", "")
+    quantity    = p.get("quantity", "")
+    countries   = p.get("countries", "")
+    image_url   = p.get("image_front_small_url") or p.get("image_url") or ""
+
+    # Map category to our category list
+    cat_lower = categories.lower() if categories else ""
+    if any(w in cat_lower for w in ["clothing","apparel","fashion","textile","wear"]):
+        category = "Clothing"
+    elif any(w in cat_lower for w in ["shoe","footwear","boot","sandal"]):
+        category = "Footwear"
+    elif any(w in cat_lower for w in ["food","beverage","drink","snack","cereal","dairy","bread","fruit","vegetable","meat","fish"]):
+        category = "Food"
+    elif any(w in cat_lower for w in ["beauty","cosmetic","shampoo","conditioner","cream","lotion","serum","makeup","skincare","haircare","soap","perfume","deodorant"]):
+        category = "Personal Care"
+    elif any(w in cat_lower for w in ["kitchen","cookware","utensil","container"]):
+        category = "Kitchen"
+    elif any(w in cat_lower for w in ["home","household","furniture","linen","candle"]):
+        category = "Home"
+    elif any(w in cat_lower for w in ["sport","gym","yoga","fitness","athletic"]):
+        category = "Sportswear"
+    elif any(w in cat_lower for w in ["electronic","gadget","tech","device","phone","laptop","charger"]):
+        category = "Electronics"
+    elif any(w in cat_lower for w in ["baby","infant","child","toddler","diaper","nappy"]):
+        category = "Baby"
+    elif source_db == "beauty":
+        category = "Personal Care"
+    elif source_db == "food":
+        category = "Food"
+    else:
+        category = "General"
+
+    # Parse certifications from labels
+    cert_map = {
+        "organic":     "Organic",
+        "fair-trade":  "Fair Trade",
+        "fairtrade":   "Fair Trade",
+        "b-corp":      "B-Corp",
+        "vegan":       "Vegan",
+        "vegetarian":  "Vegetarian",
+        "gots":        "GOTS",
+        "oeko-tex":    "OEKO-TEX",
+        "cosmos":      "COSMOS",
+        "rainforest":  "Rainforest Alliance",
+        "halal":       "Halal",
+        "kosher":      "Kosher",
+        "cruelty-free":"Cruelty Free",
+        "gluten-free": "Gluten Free",
+        "non-gmo":     "Non-GMO",
+        "fsc":         "FSC",
+        "recyclable":  "Recyclable",
+        "recycled":    "Recycled",
+    }
+
+    labels_str = labels if isinstance(labels, str) else " ".join(labels)
+    labels_lower = labels_str.lower()
+    found_certs = [v for k, v in cert_map.items() if k in labels_lower]
+    cert_string = ", ".join(dict.fromkeys(found_certs))  # deduplicate
+
+    # Build description from available data
+    description_parts = []
+    if ingredients:
+        description_parts.append(f"Ingredients: {ingredients[:300]}")
+    if labels_str:
+        description_parts.append(f"Labels: {labels_str[:200]}")
+    if quantity:
+        description_parts.append(f"Quantity: {quantity}")
+    description = ". ".join(description_parts)
+
+    return JsonResponse({
+        "found":       True,
+        "source":      source_db,
+        "barcode":     barcode,
+        "product": {
+            "name":        name,
+            "brand":       brand,
+            "category":    category,
+            "materials":   ingredients[:300] if ingredients else "",
+            "cert":        cert_string,
+            "description": description[:500],
+            "image_url":   image_url,
+            "quantity":    quantity,
+            "countries":   countries,
+            "labels_raw":  labels_str[:300],
+        }
+    })
+
+
+# ═══════════════════════════════════════════════════════════
+# AUTH — Email OTP Login (no password)
+# ═══════════════════════════════════════════════════════════
+
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+
+def _get_logged_in_user(request):
+    """Return EcoUser if logged in via session, else None."""
+    from shop_assistant.models import EcoUser
+    uid = request.session.get('eco_user_id')
+    if uid:
+        try:
+            return EcoUser.objects.get(id=uid)
+        except EcoUser.DoesNotExist:
+            pass
+    return None
+
+
+def login_page(request):
+    return render(request, 'shop_assistant/login.html', {'page': 'login'})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_send_otp(request):
+    """POST /api/auth/send-otp/  { email }"""
+    try:
+        from shop_assistant.models import OTPCode
+        data  = json.loads(request.body)
+        email = data.get('email', '').strip().lower()
+        if not email or '@' not in email:
+            return JsonResponse({'error': 'Enter a valid email address.'}, status=400)
+
+        otp = OTPCode.generate(email)
+
+        # Always print to terminal — works even without email config
+        print(f'\n{"="*45}')
+        print(f'[EcoMind OTP]  Email : {email}')
+        print(f'[EcoMind OTP]  Code  : {otp.code}')
+        print(f'{"="*45}\n')
+
+        # Send email — read credentials directly from env
+        import os as _os
+        email_user = _os.environ.get('EMAIL_HOST_USER', '').strip()
+        email_pass = _os.environ.get('EMAIL_HOST_PASSWORD', '').strip()
+
+        print(f'[EcoMind OTP] EMAIL_HOST_USER set: {bool(email_user)}')
+        print(f'[EcoMind OTP] EMAIL_HOST_PASSWORD set: {bool(email_pass)}')
+
+        email_sent = False
+        email_error = ''
+
+        if email_user and email_pass:
+            try:
+                from django.core.mail import get_connection, EmailMessage
+                # Build connection manually to ensure fresh credentials
+                connection = get_connection(
+                    backend='django.core.mail.backends.smtp.EmailBackend',
+                    host='smtp.gmail.com',
+                    port=587,
+                    username=email_user,
+                    password=email_pass,
+                    use_tls=True,
+                    fail_silently=False,
+                )
+                msg_obj = EmailMessage(
+                    subject='Your EcoMind Login Code',
+                    body=(
+                        f'Your EcoMind AI login code is:\n\n'
+                        f'  {otp.code}\n\n'
+                        f'This code expires in 10 minutes.\n'
+                        f'If you did not request this, ignore this email.'
+                    ),
+                    from_email=email_user,
+                    to=[email],
+                    connection=connection,
+                )
+                msg_obj.send(fail_silently=False)
+                email_sent = True
+                print(f'[EcoMind OTP] ✅ Email sent successfully to {email}')
+            except Exception as mail_err:
+                email_error = str(mail_err)
+                print(f'[EcoMind OTP] ❌ Email send failed: {mail_err}')
+        else:
+            email_error = 'EMAIL_HOST_USER or EMAIL_HOST_PASSWORD not set in environment'
+            print(f'[EcoMind OTP] ⚠️  {email_error}')
+
+        msg = f'OTP sent to {email}' if email_sent else f'OTP generated (check server terminal)'
+        return JsonResponse({
+            'status': 'sent',
+            'message': msg,
+            'dev_mode': not email_sent,
+            'email_error': email_error if not email_sent else '',
+        })
+
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return JsonResponse({'error': f'Server error: {str(e)} — did you run migrations?'}, status=500)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_verify_otp(request):
+    """POST /api/auth/verify-otp/  { email, code }"""
+    try:
+        from shop_assistant.models import EcoUser, OTPCode
+        try:
+            data  = json.loads(request.body)
+            email = data.get('email', '').strip().lower()
+            code  = data.get('code', '').strip()
+        except Exception:
+            return JsonResponse({'error': 'Invalid request'}, status=400)
+
+        try:
+            otp = OTPCode.objects.filter(email=email, code=code, used=False).latest('created_at')
+        except OTPCode.DoesNotExist:
+            return JsonResponse({'error': 'Invalid or expired code. Try again.'}, status=400)
+
+        if not otp.is_valid():
+            return JsonResponse({'error': 'Code expired. Please request a new one.'}, status=400)
+
+        otp.used = True
+        otp.save()
+
+        # Get or create user
+        from django.utils import timezone
+        user, created = EcoUser.objects.get_or_create(email=email)
+        user.last_login = timezone.now()
+        user.save()
+
+        # Store in session
+        request.session['eco_user_id'] = user.id
+        request.session['eco_user_email'] = user.email
+
+        return JsonResponse({
+            'status': 'ok',
+            'user': {'email': user.email, 'name': user.name, 'id': user.id},
+            'created': created,
+        })
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return JsonResponse({'error': f'Server error: {str(e)}. Run: python manage.py migrate'}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_logout(request):
+    request.session.flush()
+    return JsonResponse({'status': 'ok'})
+
+
+def api_auth_status(request):
+    """GET /api/auth/status/  — check if logged in"""
+    user = _get_logged_in_user(request)
+    if user:
+        return JsonResponse({'logged_in': True, 'email': user.email, 'name': user.name})
+    return JsonResponse({'logged_in': False})
+
+
+# ═══════════════════════════════════════════════════════════
+# BARCODE PROXY — browser calls this, Django calls Open Food Facts
+# Avoids all browser CORS/fetch issues
+# ═══════════════════════════════════════════════════════════
+def api_barcode_lookup(request):
+    """
+    GET /api/barcode/?code=8901030857973
+    Django proxies the request to multiple product databases.
+    Returns unified product JSON or {'found': False}.
+    """
+    import urllib.request
+    import urllib.error
+
+    barcode = request.GET.get('code', '').strip()
+    if not barcode:
+        return JsonResponse({'found': False, 'error': 'No barcode provided'})
+
+    endpoints = [
+        f'https://world.openfoodfacts.org/api/v0/product/{barcode}.json',
+        f'https://in.openfoodfacts.org/api/v0/product/{barcode}.json',
+        f'https://world.openbeautyfacts.org/api/v0/product/{barcode}.json',
+        f'https://world.openproductsfacts.org/api/v0/product/{barcode}.json',
+    ]
+
+    headers = {
+        'User-Agent': 'EcoMindAI/1.0 (university project; contact: ecomind@lpu.in)',
+        'Accept': 'application/json',
+    }
+
+    for url in endpoints:
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                import json as _json
+                data = _json.loads(resp.read().decode('utf-8'))
+                p = data.get('product', {})
+                if not p:
+                    continue
+
+                name = (p.get('product_name') or p.get('product_name_en') or
+                        p.get('product_name_hi') or p.get('generic_name') or
+                        p.get('abbreviated_product_name') or '').strip()
+                if not name:
+                    continue
+
+                brand       = (p.get('brands') or '').split(',')[0].strip()
+                ingredients = (p.get('ingredients_text') or p.get('ingredients_text_en') or '')[:400]
+                labels      = ', '.join(
+                    l.replace('en:', '').replace('fr:', '').replace('-', ' ')
+                    for l in (p.get('labels_tags') or [])
+                )
+                packaging   = ', '.join(
+                    x.replace('en:', '').replace('fr:', '').replace('-', ' ')
+                    for x in (p.get('packaging_tags') or [])
+                )
+                quantity    = p.get('quantity') or ''
+                countries   = ', '.join(
+                    c.replace('en:', '') for c in (p.get('countries_tags') or [])
+                )
+
+                cats = ' '.join(p.get('categories_tags') or []) + ' ' + (p.get('categories') or '')
+                cats = cats.lower()
+                category = 'Food'
+                if any(w in cats for w in ['shirt','cloth','apparel','jacket','dress','wear','jean']):
+                    category = 'Clothing'
+                elif any(w in cats for w in ['shoe','boot','footwear','sandal','sneaker']):
+                    category = 'Footwear'
+                elif any(w in cats for w in ['cosmetic','beauty','shampoo','lotion','cream','soap','hair','skin','perfume']):
+                    category = 'Personal Care'
+                elif any(w in cats for w in ['baby','infant','diaper']):
+                    category = 'Baby'
+                elif any(w in cats for w in ['kitchen','cleaning','detergent','household']):
+                    category = 'Kitchen'
+
+                desc_parts = []
+                if ingredients: desc_parts.append(f'Ingredients: {ingredients}')
+                if packaging:   desc_parts.append(f'Packaging: {packaging}')
+                if quantity:    desc_parts.append(f'Quantity: {quantity}')
+                if countries:   desc_parts.append(f'Made in: {countries}')
+
+                return JsonResponse({
+                    'found':       True,
+                    'source':      url.split('/')[2],
+                    'name':        name,
+                    'brand':       brand,
+                    'category':    category,
+                    'materials':   ingredients,
+                    'cert':        labels,
+                    'description': '. '.join(desc_parts),
+                    'quantity':    quantity,
+                })
+        except Exception as e:
+            continue
+
+    # UPCitemdb fallback (no auth needed for trial)
+    try:
+        upc_url = f'https://api.upcitemdb.com/prod/trial/lookup?upc={barcode}'
+        req = urllib.request.Request(upc_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            import json as _json
+            data = _json.loads(resp.read().decode('utf-8'))
+            if data.get('code') == 'OK' and data.get('items'):
+                item = data['items'][0]
+                name = (item.get('title') or '').strip()
+                if name:
+                    return JsonResponse({
+                        'found':       True,
+                        'source':      'upcitemdb.com',
+                        'name':        name,
+                        'brand':       item.get('brand') or '',
+                        'category':    'General',
+                        'materials':   item.get('ingredients') or '',
+                        'cert':        '',
+                        'description': (item.get('description') or '')[:300],
+                        'quantity':    '',
+                    })
+    except Exception:
+        pass
+
+    return JsonResponse({'found': False, 'barcode': barcode})
+
+
+# ═══════════════════════════════════════════════════════════
+# SAVE PRODUCT — User saves a scanned product to their account
+# ═══════════════════════════════════════════════════════════
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_save_product(request):
+    """
+    POST /api/save-product/
+    Saves scanned product to UserSavedProduct AND adds it to
+    the live ML model DataFrame so it affects future recommendations.
+    """
+    user = _get_logged_in_user(request)
+    if not user:
+        return JsonResponse({'error': 'Login required to save products.'}, status=401)
+
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    from shop_assistant.models import UserSavedProduct
+    from ai_model.model import add_user_product
+
+    # Save to database
+    product = UserSavedProduct.objects.create(
+        user         = user,
+        name         = data.get('name', '')[:200],
+        brand        = data.get('brand', '')[:100],
+        category     = data.get('category', 'General')[:100],
+        description  = data.get('description', ''),
+        materials    = data.get('materials', '')[:500],
+        cert         = data.get('cert', '')[:300],
+        price        = float(data['price']) if data.get('price') else None,
+        barcode      = data.get('barcode', '')[:50],
+        eco_score    = float(data['eco_score'])    if data.get('eco_score')    else None,
+        ethics_score = float(data['ethics_score']) if data.get('ethics_score') else None,
+        carbon_level = data.get('carbon_level', ''),
+        overall_score= float(data['overall_score'])if data.get('overall_score')else None,
+        tags         = ','.join(data.get('tags', [])),
+        source       = data.get('source', 'manual'),
+    )
+
+    # Add to live ML model
+    total = add_user_product({
+        'name':         product.name,
+        'brand':        product.brand,
+        'category':     product.category,
+        'description':  product.description,
+        'materials':    product.materials,
+        'cert':         product.cert,
+        'price':        product.price or 10.0,
+        'eco_score':    product.eco_score or 5.0,
+        'ethics_score': product.ethics_score or 5.0,
+        'carbon_level': product.carbon_level or 'moderate',
+    })
+
+    return JsonResponse({
+        'status':    'saved',
+        'message':   f'"{product.name}" saved to your account!',
+        'product_id': product.id,
+        'total_products': total,
+    })
+
+
+@require_http_methods(["GET"])
+def api_my_products(request):
+    """GET /api/my-products/  — list saved products for logged-in user"""
+    user = _get_logged_in_user(request)
+    if not user:
+        return JsonResponse({'error': 'Login required'}, status=401)
+
+    from shop_assistant.models import UserSavedProduct
+    products = UserSavedProduct.objects.filter(user=user).values(
+        'id','name','brand','category','eco_score','ethics_score',
+        'overall_score','carbon_level','tags','saved_at','source'
+    )
+    return JsonResponse({'status': 'ok', 'products': list(products)})

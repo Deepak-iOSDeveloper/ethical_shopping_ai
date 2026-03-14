@@ -368,7 +368,7 @@ class EthicalShoppingAI:
         prob = self.rf_classifier.predict_proba(X)[0][1]
         return round(prob * 100, 1)
 
-    def recommend(self, category=None, budget=None, keyword=None, top_n=12):
+    def recommend(self, category=None, budget=None, keyword=None, top_n=50):
         df = self.df.copy()
 
         if category and category != "All":
@@ -425,4 +425,68 @@ def get_model():
     global _model_instance
     if _model_instance is None:
         _model_instance = EthicalShoppingAI()
+        print(f"[EcoMind] Model loaded: {len(_model_instance.df)} products across {_model_instance.df['category'].nunique()} categories")
     return _model_instance
+
+def reset_model():
+    """Call this to force a fresh reload of the model."""
+    global _model_instance
+    _model_instance = None
+
+
+def add_user_product(product_dict):
+    """
+    Add a user-saved product into the live DataFrame so it
+    immediately participates in recommendations and similarity.
+    Call reset_model() after to rebuild the ML model with it.
+
+    product_dict keys: name, brand, category, description, materials,
+                       cert, eco_score, ethics_score, carbon_footprint, price
+    """
+    model = get_model()
+
+    carbon_map = {'ultra_low': 0.3, 'low': 1.0, 'moderate': 2.5, 'high': 5.0}
+
+    new_row = {
+        'name':               product_dict.get('name', 'Unknown Product'),
+        'brand':              product_dict.get('brand', 'Unknown Brand'),
+        'category':           product_dict.get('category', 'General'),
+        'eco_score':          float(product_dict.get('eco_score', 5.0)),
+        'ethics_score':       float(product_dict.get('ethics_score', 5.0)),
+        'price':              float(product_dict.get('price', 10.0)),
+        'sustainability_cert': product_dict.get('cert', ''),
+        'materials':          product_dict.get('materials', ''),
+        'carbon_footprint':   carbon_map.get(product_dict.get('carbon_level', 'moderate'), 2.5),
+        'description':        product_dict.get('description', ''),
+    }
+
+    # Compute composite score
+    new_row['composite_score'] = round(
+        new_row['eco_score'] * 0.40 +
+        new_row['ethics_score'] * 0.40 +
+        (10 - new_row['carbon_footprint']) * 0.20, 2
+    )
+
+    # Append to live DataFrame
+    new_df = pd.DataFrame([new_row])
+    model.df = pd.concat([model.df, new_df], ignore_index=True)
+
+    # Rebuild features + retrain RandomForest with the new data
+    # Re-encode categories (new category might have appeared)
+    try:
+        model.df['category_encoded'] = model.label_enc.transform(model.df['category'])
+    except ValueError:
+        model.df['category_encoded'] = model.label_enc.fit_transform(model.df['category'])
+
+    model.df['composite_score'] = (
+        model.df['eco_score'] * 0.4 +
+        model.df['ethics_score'] * 0.4 +
+        (10 - model.df['carbon_footprint'].clip(upper=10)) * 0.2
+    ).round(2)
+
+    feature_cols  = ['eco_score', 'ethics_score', 'carbon_footprint', 'category_encoded']
+    model.feature_matrix = model.scaler.fit_transform(model.df[feature_cols].values)
+    model._train_model()
+
+    print(f"[EcoMind] ✅ User product added: '{new_row['name']}' — total products: {len(model.df)}")
+    return len(model.df)

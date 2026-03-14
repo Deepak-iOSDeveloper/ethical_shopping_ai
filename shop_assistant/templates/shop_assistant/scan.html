@@ -1,0 +1,1282 @@
+{% extends 'shop_assistant/base.html' %}
+{% block title %}Scan Any Product — EcoMind AI{% endblock %}
+
+{% block extra_head %}
+<!-- html5-qrcode for barcode scanning -->
+<style>
+
+  /* ── Hero ───────────────────────────────────── */
+  .scan-hero {
+    text-align: center;
+    padding: 3.5rem 0 2.5rem;
+    position: relative;
+  }
+  .scan-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 600px 300px at 50% 0%, rgba(74,222,128,0.07), transparent);
+    pointer-events: none;
+  }
+  .scan-hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #e8f5ee 0%, #4ade80 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    margin-bottom: 0.75rem;
+  }
+  .scan-hero p { color: var(--text-muted); max-width: 540px; margin: 0 auto 1.5rem; line-height: 1.7; }
+  .scan-hero-badges { display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; }
+  .scan-hero-badge {
+    background: rgba(74,222,128,0.07);
+    border: 1px solid rgba(74,222,128,0.15);
+    color: var(--green-pale);
+    padding: 4px 12px; border-radius: 99px;
+    font-size: 0.73rem; font-family: var(--font-mono);
+  }
+
+  /* ── Mode tabs ──────────────────────────────── */
+  .mode-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0 0 1.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 0.4rem;
+  }
+  .mode-tab {
+    flex: 1;
+    padding: 0.65rem 1rem;
+    border-radius: calc(var(--radius-lg) - 4px);
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: var(--font-display);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  }
+  .mode-tab.active {
+    background: rgba(74,222,128,0.12);
+    border: 1px solid rgba(74,222,128,0.25);
+    color: var(--green-bright);
+  }
+  .mode-tab:hover:not(.active) { color: var(--text-primary); background: rgba(255,255,255,0.03); }
+
+  /* ── Layout ─────────────────────────────────── */
+  .scan-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin: 0 0 2rem;
+    align-items: start;
+  }
+  @media (max-width: 768px) { .scan-layout { grid-template-columns: 1fr; } }
+
+  /* ── Barcode scanner card ───────────────────── */
+  .barcode-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    display: none;
+  }
+  .barcode-card.active { display: block; }
+  .barcode-card-title {
+    font-family: var(--font-display);
+    font-size: 1.1rem; font-weight: 700;
+    margin-bottom: 0.35rem;
+  }
+  .barcode-card-sub { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.6; }
+
+  /* Camera viewport */
+  .camera-wrap {
+    position: relative;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: #0a0f0b;
+    border: 1px solid rgba(74,222,128,0.15);
+    margin-bottom: 1rem;
+  }
+  #barcode-reader {
+    width: 100%;
+  }
+  /* Override html5-qrcode default styles */
+  #barcode-reader video { border-radius: var(--radius) !important; }
+  #barcode-reader img[alt="Info icon"] { display: none !important; }
+  #barcode-reader__scan_region { border: none !important; }
+  #barcode-reader__dashboard_section_csr button,
+  #barcode-reader__dashboard_section_fsr button {
+    background: rgba(74,222,128,0.1) !important;
+    border: 1px solid rgba(74,222,128,0.3) !important;
+    color: var(--green-bright) !important;
+    border-radius: 8px !important;
+    font-family: var(--font-body) !important;
+    padding: 6px 14px !important;
+    font-size: 0.82rem !important;
+    cursor: pointer !important;
+  }
+  #barcode-reader__dashboard { display: none !important; }
+
+  /* Scan overlay */
+  .scan-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .scan-frame {
+    width: 220px; height: 120px;
+    border: 2px solid rgba(74,222,128,0.7);
+    border-radius: 12px;
+    position: relative;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.45);
+  }
+  .scan-frame::before {
+    content: '';
+    position: absolute;
+    top: -2px; left: 50%; transform: translateX(-50%);
+    width: 60%; height: 2px;
+    background: var(--green-bright);
+    animation: scanLine 2s ease-in-out infinite;
+    box-shadow: 0 0 8px var(--green-bright);
+  }
+  @keyframes scanLine {
+    0%   { top: 0%; }
+    50%  { top: calc(100% - 2px); }
+    100% { top: 0%; }
+  }
+  .scan-corner {
+    position: absolute;
+    width: 14px; height: 14px;
+    border-color: var(--green-bright);
+    border-style: solid;
+  }
+  .scan-corner.tl { top: -2px; left: -2px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+  .scan-corner.tr { top: -2px; right: -2px; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+  .scan-corner.bl { bottom: -2px; left: -2px; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+  .scan-corner.br { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+
+  .camera-start-btn {
+    width: 100%;
+    background: rgba(74,222,128,0.1);
+    border: 1px solid rgba(74,222,128,0.25);
+    color: var(--green-bright);
+    font-family: var(--font-display);
+    font-size: 0.9rem; font-weight: 700;
+    padding: 0.8rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.25s;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .camera-start-btn:hover { background: rgba(74,222,128,0.18); }
+  .camera-start-btn.stop {
+    background: rgba(248,113,113,0.08);
+    border-color: rgba(248,113,113,0.25);
+    color: #f87171;
+  }
+  .camera-start-btn.stop:hover { background: rgba(248,113,113,0.15); }
+
+  /* Barcode status */
+  .barcode-status {
+    padding: 0.65rem 1rem;
+    border-radius: var(--radius);
+    font-size: 0.8rem;
+    display: none;
+    margin-bottom: 0.75rem;
+  }
+  .barcode-status.scanning {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: rgba(74,222,128,0.06);
+    border: 1px solid rgba(74,222,128,0.12);
+    color: var(--green-pale);
+  }
+  .barcode-status.found {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: rgba(74,222,128,0.12);
+    border: 1px solid rgba(74,222,128,0.3);
+    color: var(--green-bright);
+    font-weight: 700;
+  }
+  .barcode-status.error {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: rgba(248,113,113,0.06);
+    border: 1px solid rgba(248,113,113,0.2);
+    color: #f87171;
+  }
+  .barcode-status.fetching {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: rgba(251,191,36,0.06);
+    border: 1px solid rgba(251,191,36,0.2);
+    color: var(--amber);
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: currentColor;
+    animation: blink 1.2s ease infinite;
+    flex-shrink: 0;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* Fetched product preview */
+  .fetched-product {
+    background: rgba(74,222,128,0.06);
+    border: 1px solid rgba(74,222,128,0.18);
+    border-radius: var(--radius);
+    padding: 0.85rem 1rem;
+    font-size: 0.8rem;
+    display: none;
+    margin-bottom: 0.75rem;
+  }
+  .fetched-product.visible { display: block; }
+  .fetched-title { font-weight: 700; color: var(--green-pale); margin-bottom: 0.25rem; font-size: 0.85rem; }
+  .fetched-meta { color: var(--text-dim); }
+
+  /* Manual barcode input */
+  .manual-barcode-row {
+    display: flex; gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+  .manual-barcode-row input {
+    flex: 1;
+    background: var(--bg-mid);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.6rem 0.85rem;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .manual-barcode-row input:focus { border-color: rgba(74,222,128,0.4); }
+  .manual-barcode-row button {
+    background: rgba(74,222,128,0.1);
+    border: 1px solid rgba(74,222,128,0.25);
+    color: var(--green-bright);
+    border-radius: var(--radius);
+    padding: 0.6rem 1rem;
+    font-size: 0.8rem; font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .manual-barcode-row button:hover { background: rgba(74,222,128,0.18); }
+
+  /* ── Form card ──────────────────────────────── */
+  .scan-form-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    position: sticky;
+    top: 1.5rem;
+    display: none;
+  }
+  .scan-form-card.active { display: block; }
+  .scan-form-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; margin-bottom: 0.35rem; }
+  .scan-form-sub { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6; }
+
+  .form-group { margin-bottom: 1rem; }
+  .form-group label {
+    display: block;
+    font-size: 0.78rem; font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 0.35rem;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .form-group label span { color: var(--green-bright); }
+
+  .scan-input, .scan-select, .scan-textarea {
+    width: 100%; box-sizing: border-box;
+    background: var(--bg-mid);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.65rem 0.9rem;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  .scan-input.autofilled { border-color: rgba(74,222,128,0.4); background: rgba(74,222,128,0.04); }
+  .scan-input:focus, .scan-select:focus, .scan-textarea:focus {
+    border-color: rgba(74,222,128,0.5);
+    box-shadow: 0 0 0 3px rgba(74,222,128,0.08);
+  }
+  .scan-textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+  .scan-select option { background: #141f17; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+
+  .autofill-banner {
+    background: rgba(74,222,128,0.08);
+    border: 1px solid rgba(74,222,128,0.2);
+    border-radius: var(--radius);
+    padding: 0.6rem 0.85rem;
+    font-size: 0.76rem;
+    color: var(--green-pale);
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .autofill-banner.visible { display: flex; align-items: center; gap: 0.5rem; }
+
+  .scan-btn {
+    width: 100%;
+    background: rgba(74,222,128,0.12);
+    border: 1px solid rgba(74,222,128,0.35);
+    color: var(--green-bright);
+    font-family: var(--font-display);
+    font-size: 0.95rem; font-weight: 700;
+    padding: 0.85rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.25s;
+    margin-top: 0.5rem;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  }
+  .scan-btn:hover:not(:disabled) { background: rgba(74,222,128,0.22); border-color: rgba(74,222,128,0.6); transform: translateY(-1px); }
+  .scan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .scan-tip {
+    margin-top: 1rem;
+    background: rgba(74,222,128,0.04);
+    border: 1px solid rgba(74,222,128,0.09);
+    border-radius: var(--radius);
+    padding: 0.65rem 0.85rem;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .scan-tip strong { color: var(--green-pale); }
+
+  /* ── Results panel ──────────────────────────── */
+  .scan-result-panel { display: flex; flex-direction: column; gap: 1rem; min-height: 200px; }
+
+  .scan-empty {
+    background: var(--bg-card);
+    border: 1px dashed rgba(74,222,128,0.15);
+    border-radius: var(--radius-lg);
+    padding: 3rem 2rem;
+    text-align: center;
+    color: var(--text-dim);
+  }
+  .scan-empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.5; }
+  .scan-empty-text { font-size: 0.85rem; line-height: 1.7; }
+
+  .scan-loading {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 3rem 2rem;
+    text-align: center;
+    display: none;
+  }
+  .scan-spinner {
+    width: 40px; height: 40px;
+    border: 3px solid rgba(74,222,128,0.15);
+    border-top-color: var(--green-bright);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .scan-loading-text { font-size: 0.85rem; color: var(--text-muted); }
+
+  /* ── Verdict card ───────────────────────────── */
+  .verdict-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    display: none;
+    animation: fadeUp 0.4s ease both;
+  }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+
+  .verdict-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; }
+  .verdict-icon-wrap {
+    width: 56px; height: 56px;
+    border-radius: 16px;
+    background: rgba(74,222,128,0.1);
+    border: 1px solid rgba(74,222,128,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; flex-shrink: 0;
+  }
+  .verdict-product-name { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+  .verdict-product-meta { font-size: 0.75rem; color: var(--text-muted); }
+  .verdict-label { font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; margin-left: auto; flex-shrink: 0; }
+
+  .verdict-msg {
+    font-size: 0.83rem; color: var(--text-muted); line-height: 1.65;
+    padding: 0.75rem 1rem;
+    background: rgba(74,222,128,0.04);
+    border-left: 3px solid rgba(74,222,128,0.3);
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 1.25rem;
+  }
+
+  .scores-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.25rem; }
+  @media (max-width: 480px) { .scores-grid { grid-template-columns: 1fr; } }
+
+  .score-box {
+    background: var(--bg-mid);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+  }
+  .score-box-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem; }
+  .score-box-val { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 700; color: var(--green-bright); line-height: 1; margin-bottom: 0.45rem; }
+  .score-box-val span { font-size: 0.8rem; color: var(--text-dim); }
+  .score-bar-track { height: 4px; background: rgba(74,222,128,0.1); border-radius: 99px; overflow: hidden; }
+  .score-bar-fill { height: 100%; border-radius: 99px; transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1); width: 0%; }
+
+  .carbon-row {
+    display: flex; align-items: center; gap: 0.75rem;
+    background: var(--bg-mid);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .carbon-icon { font-size: 1.5rem; }
+  .carbon-info { flex: 1; }
+  .carbon-label-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 3px; }
+  .carbon-level-text { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; }
+  .carbon-estimate { font-size: 0.72rem; color: var(--text-dim); }
+  .carbon-bar-track { height: 5px; background: rgba(74,222,128,0.1); border-radius: 99px; overflow: hidden; }
+  .carbon-bar-fill { height: 100%; border-radius: 99px; transition: width 1s ease; }
+
+  .scan-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem; }
+  .scan-tag {
+    padding: 4px 12px; border-radius: 6px;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
+    background: rgba(74,222,128,0.12);
+    border: 1px solid rgba(74,222,128,0.2);
+    color: #4ade80;
+  }
+  .no-tags { font-size: 0.78rem; color: var(--text-dim); font-style: italic; }
+
+  .ai-badge-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 0.85rem;
+    border-top: 1px solid rgba(74,222,128,0.08);
+    font-size: 0.72rem;
+  }
+  .ai-badge {
+    background: rgba(74,222,128,0.08);
+    border: 1px solid rgba(74,222,128,0.2);
+    color: var(--green-pale);
+    padding: 3px 10px; border-radius: 5px;
+    font-family: var(--font-mono); font-weight: 700;
+  }
+  .confidence-txt { color: var(--text-dim); }
+
+  .scan-suggestions {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    display: none;
+    animation: fadeUp 0.5s ease both;
+  }
+  .scan-suggestions-title { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .suggestion-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .chip {
+    background: var(--bg-mid);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 5px 12px; border-radius: 99px;
+    font-size: 0.75rem; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .chip:hover { border-color: rgba(74,222,128,0.3); color: var(--green-pale); }
+
+  .how-mini {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-top: 2rem;
+  }
+  .how-mini-title { font-family: var(--font-display); font-size: 1rem; font-weight: 700; margin-bottom: 1rem; }
+  .how-mini-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; }
+  .how-mini-step { text-align: center; }
+  .how-mini-num {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    background: rgba(74,222,128,0.08);
+    border: 1px solid rgba(74,222,128,0.18);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700;
+    color: var(--green-bright);
+    margin: 0 auto 0.5rem;
+  }
+  .how-mini-txt { font-size: 0.75rem; color: var(--text-muted); line-height: 1.5; }
+
+  .scan-error {
+    background: rgba(248,113,113,0.06);
+    border: 1px solid rgba(248,113,113,0.2);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    color: #f87171;
+    font-size: 0.85rem;
+    display: none;
+  }
+
+  .save-product-btn {
+    width: 100%;
+    background: rgba(74,222,128,0.08);
+    border: 1px solid rgba(74,222,128,0.2);
+    color: var(--green-pale);
+    font-family: var(--font-display);
+    font-size: 0.88rem; font-weight: 700;
+    padding: 0.7rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  }
+  .save-product-btn:hover:not(:disabled) {
+    background: rgba(74,222,128,0.16);
+    border-color: rgba(74,222,128,0.4);
+    color: var(--green-bright);
+  }
+  .save-product-btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .save-product-btn.saved {
+    background: rgba(74,222,128,0.15);
+    border-color: rgba(74,222,128,0.35);
+    color: var(--green-bright);
+  }
+  .save-msg {
+    font-size: 0.78rem;
+    text-align: center;
+    margin-top: 0.4rem;
+    min-height: 1rem;
+  }
+  .save-msg.ok  { color: var(--green-bright); }
+  .save-msg.err { color: #f87171; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<div class="scan-hero animate-in">
+  <h1>🔍 Scan Any Product</h1>
+  <p>Point your camera at any barcode to instantly fetch product info and get its ethical scores — or type in details manually.</p>
+  <div class="scan-hero-badges">
+    <span class="scan-hero-badge">📷 Camera Barcode Scanner</span>
+    <span class="scan-hero-badge">🗄️ Open Food Facts DB</span>
+    <span class="scan-hero-badge">🧠 EcoMindNet Scoring</span>
+    <span class="scan-hero-badge">🌿 Free & Private</span>
+  </div>
+</div>
+
+<!-- Mode tabs -->
+<div class="mode-tabs animate-in" style="animation-delay:0.05s">
+  <button class="mode-tab active" id="tab-barcode" onclick="switchMode('barcode')">
+    📷 Scan Barcode
+  </button>
+  <button class="mode-tab" id="tab-manual" onclick="switchMode('manual')">
+    ✏️ Enter Manually
+  </button>
+</div>
+
+<!-- Main layout -->
+<div class="scan-layout animate-in" style="animation-delay:0.1s">
+
+  <!-- ── LEFT: Camera + ZXing Barcode Scanner ──── -->
+  <div class="barcode-card active" id="barcode-panel">
+    <div class="barcode-card-title">📷 Barcode Scanner</div>
+    <div class="barcode-card-sub">Point your camera at the product barcode. Detected automatically — no button press needed.</div>
+
+    <!-- Live camera feed -->
+    <div class="camera-wrap" id="camera-wrap">
+      <video id="camera-video" autoplay playsinline muted
+             style="width:100%;border-radius:var(--radius);display:none;"></video>
+      <canvas id="camera-canvas" style="display:none;"></canvas>
+
+      <!-- Scan overlay -->
+      <div class="scan-overlay" id="scan-overlay" style="display:none;">
+        <div class="scan-frame">
+          <div class="scan-corner tl"></div>
+          <div class="scan-corner tr"></div>
+          <div class="scan-corner bl"></div>
+          <div class="scan-corner br"></div>
+        </div>
+      </div>
+
+      <!-- Placeholder -->
+      <div id="camera-placeholder" style="
+        background:#0a0f0b;border-radius:var(--radius);
+        height:220px;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:0.5rem;
+        border:1px solid rgba(74,222,128,0.1);">
+        <div style="font-size:2.5rem;opacity:0.3;">📷</div>
+        <div style="font-size:0.78rem;color:var(--text-dim);">Camera preview will appear here</div>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="barcode-status" id="barcode-status"></div>
+
+    <!-- Fetched product preview -->
+    <div class="fetched-product" id="fetched-preview">
+      <div class="fetched-title" id="fetched-name">—</div>
+      <div class="fetched-meta" id="fetched-meta">—</div>
+    </div>
+
+    <!-- Camera button -->
+    <button class="camera-start-btn" id="camera-btn" onclick="toggleCamera()">
+      📷 Start Camera
+    </button>
+
+    <div style="font-size:0.72rem;color:var(--text-dim);margin:0.5rem 0 0.75rem;text-align:center;">
+      💡 Hold the barcode steady inside the green frame — scans automatically
+    </div>
+
+    <!-- Manual barcode fallback -->
+    <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.4rem;">Or type the barcode number:</div>
+    <div class="manual-barcode-row">
+      <input id="manual-barcode" type="text" inputmode="numeric" placeholder="e.g. 8901030857973 (Kissan)" />
+      <button onclick="lookupManualBarcode()">Lookup</button>
+    </div>
+  </div>
+
+  <!-- ── LEFT: Manual Form ──────────────────────── -->
+  <div class="scan-form-card" id="manual-panel">
+    <div class="scan-form-title">Enter Product Details</div>
+    <div class="scan-form-sub">Fill in what you know — even just a name and category gives a useful prediction.</div>
+
+    <div class="autofill-banner" id="autofill-banner">
+      ✅ <span id="autofill-msg">Form auto-filled from barcode scan.</span>
+    </div>
+
+    <div class="form-group">
+      <label>Product Name <span>*</span></label>
+      <input id="inp-name" class="scan-input" type="text" placeholder="e.g. Organic Cotton T-Shirt" autocomplete="off" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Brand</label>
+        <input id="inp-brand" class="scan-input" type="text" placeholder="e.g. H&M, Patagonia" />
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select id="inp-category" class="scan-select">
+          <option value="General">General</option>
+          <option value="Clothing">Clothing</option>
+          <option value="Footwear">Footwear</option>
+          <option value="Food">Food</option>
+          <option value="Personal Care">Personal Care</option>
+          <option value="Kitchen">Kitchen</option>
+          <option value="Home">Home</option>
+          <option value="Sportswear">Sportswear</option>
+          <option value="Electronics">Electronics</option>
+          <option value="Baby">Baby</option>
+          <option value="Accessories">Accessories</option>
+          <option value="Outdoors">Outdoors</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Materials / Ingredients</label>
+      <input id="inp-materials" class="scan-input" type="text" placeholder="e.g. 100% organic cotton, recycled polyester" />
+    </div>
+    <div class="form-group">
+      <label>Certifications</label>
+      <input id="inp-cert" class="scan-input" type="text" placeholder="e.g. GOTS, Fair Trade, B-Corp, Vegan" />
+    </div>
+    <div class="form-group">
+      <label>Description <small style="color:var(--text-dim);text-transform:none;font-weight:400;">(optional)</small></label>
+      <textarea id="inp-description" class="scan-textarea" placeholder="Paste any product description or details…"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Price (₹)</label>
+      <input id="inp-price" class="scan-input" type="number" placeholder="e.g. 1299" min="0" />
+    </div>
+
+    <button class="scan-btn" id="scan-btn" onclick="runScan()">
+      <span id="btn-icon">🔍</span>
+      <span id="btn-text">Analyse Product</span>
+    </button>
+
+    <div class="scan-tip">
+      <strong>💡 Tip:</strong> After a barcode scan, the form is pre-filled automatically. You can edit any field before analysing.
+    </div>
+  </div>
+
+  <!-- ── RIGHT: Results ─────────────────────────── -->
+  <div class="scan-result-panel">
+
+    <div class="scan-empty" id="scan-empty">
+      <div class="scan-empty-icon">🌿</div>
+      <div class="scan-empty-text">
+        Scan a barcode or enter product details,<br>and your ethical scores will appear here.
+      </div>
+    </div>
+
+    <div class="scan-loading" id="scan-loading">
+      <div class="scan-spinner"></div>
+      <div class="scan-loading-text" id="loading-text">EcoMindNet is analysing your product…</div>
+    </div>
+
+    <div class="scan-error" id="scan-error"></div>
+
+    <!-- Verdict card -->
+    <div class="verdict-card" id="verdict-card">
+      <div class="verdict-header">
+        <div class="verdict-icon-wrap" id="v-icon-wrap">📦</div>
+        <div>
+          <div class="verdict-product-name" id="v-name">—</div>
+          <div class="verdict-product-meta" id="v-meta">—</div>
+        </div>
+        <div class="verdict-label" id="v-verdict-label">—</div>
+      </div>
+      <div class="verdict-msg" id="v-msg">—</div>
+      <div class="scores-grid">
+        <div class="score-box">
+          <div class="score-box-label">🌿 Eco Score</div>
+          <div class="score-box-val"><span id="v-eco">—</span><span> / 10</span></div>
+          <div class="score-bar-track"><div class="score-bar-fill" id="bar-eco" style="background:linear-gradient(90deg,#16a34a,#4ade80);"></div></div>
+        </div>
+        <div class="score-box">
+          <div class="score-box-label">⚖️ Ethics Score</div>
+          <div class="score-box-val"><span id="v-ethics">—</span><span> / 10</span></div>
+          <div class="score-bar-track"><div class="score-bar-fill" id="bar-ethics" style="background:linear-gradient(90deg,#0891b2,#67e8f9);"></div></div>
+        </div>
+        <div class="score-box">
+          <div class="score-box-label">🧠 AI Overall Score</div>
+          <div class="score-box-val"><span id="v-overall">—</span><span> / 10</span></div>
+          <div class="score-bar-track"><div class="score-bar-fill" id="bar-overall" style="background:linear-gradient(90deg,#16a34a,#86efac);"></div></div>
+        </div>
+        <div class="score-box">
+          <div class="score-box-label">📊 Confidence</div>
+          <div class="score-box-val"><span id="v-conf">—</span><span>%</span></div>
+          <div class="score-bar-track"><div class="score-bar-fill" id="bar-conf" style="background:linear-gradient(90deg,#7c3aed,#a78bfa);"></div></div>
+        </div>
+      </div>
+      <div class="carbon-row">
+        <div class="carbon-icon">💨</div>
+        <div class="carbon-info">
+          <div class="carbon-label-row">
+            <span class="carbon-level-text" id="v-carbon-label">—</span>
+            <span style="font-size:0.68rem;padding:1px 6px;border-radius:4px;font-weight:700;font-family:var(--font-mono);" id="v-carbon-badge">—</span>
+          </div>
+          <div class="carbon-estimate" id="v-carbon-est">—</div>
+          <div class="carbon-bar-track" style="margin-top:6px;"><div class="carbon-bar-fill" id="bar-carbon"></div></div>
+        </div>
+      </div>
+      <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;">Detected Ethical Labels</div>
+      <div class="scan-tags" id="v-tags"></div>
+      <div class="ai-badge-row">
+        <span class="ai-badge">🧠 Scored by EcoMind Neural Network</span>
+        <span class="confidence-txt" id="conf-txt">—</span>
+      </div>
+
+      <!-- Save product button -->
+      <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(74,222,128,0.08);">
+        <button class="save-product-btn" id="save-btn" onclick="saveProduct()">
+          💾 Save to My Account
+        </button>
+        <div class="save-msg" id="save-msg"></div>
+        <div id="save-login-prompt" style="display:none;font-size:0.78rem;color:var(--text-muted);margin-top:0.5rem;text-align:center;">
+          <a href="/signin/?next=/scan/" style="color:var(--green-bright);font-weight:700;">Login</a>
+          to save this product and help improve the AI for everyone.
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick examples -->
+    <div class="scan-suggestions" id="scan-suggestions">
+      <div class="scan-suggestions-title">💡 Try these barcodes</div>
+      <div class="suggestion-chips">
+        <span class="chip" onclick="lookupBarcode('3017624010701')">Nutella (3017624010701)</span>
+        <span class="chip" onclick="lookupBarcode('5000112548167')">Coca-Cola (5000112548167)</span>
+        <span class="chip" onclick="lookupBarcode('0038000845260')">Kellogg's (0038000845260)</span>
+        <span class="chip" onclick="fillExample('organic t-shirt','','Clothing','organic cotton','','')">Manual: Organic T-shirt</span>
+        <span class="chip" onclick="fillExample('bamboo toothbrush','','Personal Care','bamboo handle','vegan','')">Manual: Bamboo Toothbrush</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- How it works -->
+<div class="how-mini animate-in" style="animation-delay:0.2s">
+  <div class="how-mini-title">⚙️ How the barcode scan works</div>
+  <div class="how-mini-steps">
+    <div class="how-mini-step">
+      <div class="how-mini-num">01</div>
+      <div class="how-mini-txt">Camera reads the product barcode using html5-qrcode library</div>
+    </div>
+    <div class="how-mini-step">
+      <div class="how-mini-num">02</div>
+      <div class="how-mini-txt">Barcode number sent to Open Food Facts API — 3M+ free products</div>
+    </div>
+    <div class="how-mini-step">
+      <div class="how-mini-num">03</div>
+      <div class="how-mini-txt">Name, brand, ingredients, labels auto-filled into the form</div>
+    </div>
+    <div class="how-mini-step">
+      <div class="how-mini-num">04</div>
+      <div class="how-mini-txt">EcoMindNet neural network predicts all ethical scores instantly</div>
+    </div>
+    <div class="how-mini-step">
+      <div class="how-mini-num">05</div>
+      <div class="how-mini-txt">Full results displayed — eco score, ethics, carbon, tags</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ZXing barcode library — loaded from CDN
+var ZXing      = null;
+var zxingReady = false;
+(function() {
+  var s   = document.createElement('script');
+  s.src   = 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js';
+  s.onload  = function() { ZXing = window.ZXingBrowser; zxingReady = true; console.log('[EcoMind] ZXing ✅'); };
+  s.onerror = function() { console.warn('[EcoMind] ZXing failed to load'); };
+  document.head.appendChild(s);
+})();
+
+// ═══════════════════════════════════════
+// MODE SWITCHING
+// ═══════════════════════════════════════
+function switchMode(mode) {
+  var isBarcode = (mode === 'barcode');
+  document.getElementById('tab-barcode').classList.toggle('active', isBarcode);
+  document.getElementById('tab-manual').classList.toggle('active', !isBarcode);
+  document.getElementById('barcode-panel').classList.toggle('active', isBarcode);
+  document.getElementById('manual-panel').classList.toggle('active', !isBarcode);
+  if (!isBarcode) stopCamera();
+}
+
+// ═══════════════════════════════════════
+// CAMERA
+// ═══════════════════════════════════════
+var cameraStream  = null;
+var cameraRunning = false;
+var scanInterval  = null;
+var scanLocked    = false;
+var lastScanned   = '';
+
+function toggleCamera() {
+  if (cameraRunning) stopCamera(); else startCamera();
+}
+
+function startCamera() {
+  var btn   = document.getElementById('camera-btn');
+  var video = document.getElementById('camera-video');
+  var ph    = document.getElementById('camera-placeholder');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    setStatus('error', '⚠️ Camera not supported. Use manual barcode entry below.'); return;
+  }
+  btn.textContent = '⏳ Starting camera…'; btn.disabled = true;
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+  }).then(function(stream) {
+    cameraStream = stream; cameraRunning = true;
+    video.srcObject = stream;
+    video.style.display = 'block'; ph.style.display = 'none';
+    document.getElementById('scan-overlay').style.display = 'flex';
+    btn.innerHTML = '⏹ Stop Camera'; btn.className = 'camera-start-btn stop'; btn.disabled = false;
+    setStatus('scanning', '<span class="status-dot"></span> Hold barcode steady in the green frame — scanning automatically');
+    video.addEventListener('loadedmetadata', startScanLoop);
+  }).catch(function(err) {
+    btn.textContent = '📷 Start Camera'; btn.disabled = false;
+    var m = err.name === 'NotAllowedError'  ? 'Camera permission denied. Allow camera in your browser settings.' :
+            err.name === 'NotFoundError'    ? 'No camera found on this device.' :
+            (err.message || 'Could not start camera.') + ' — use manual entry below.';
+    setStatus('error', '⚠️ ' + m);
+  });
+}
+
+function stopCamera() {
+  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+  if (cameraStream) { cameraStream.getTracks().forEach(function(t){ t.stop(); }); cameraStream = null; }
+  cameraRunning = false; scanLocked = false; lastScanned = '';
+  document.getElementById('camera-video').style.display = 'none';
+  document.getElementById('camera-placeholder').style.display = 'flex';
+  document.getElementById('scan-overlay').style.display = 'none';
+  var btn = document.getElementById('camera-btn');
+  btn.innerHTML = '📷 Start Camera'; btn.className = 'camera-start-btn';
+  setStatus('', '');
+}
+
+// ═══════════════════════════════════════
+// SCAN LOOP
+// ═══════════════════════════════════════
+function startScanLoop() {
+  if (scanInterval) clearInterval(scanInterval);
+  scanInterval = setInterval(function() {
+    if (!cameraRunning || scanLocked) return;
+    scanFrame();
+  }, 400);
+}
+
+function scanFrame() {
+  var video  = document.getElementById('camera-video');
+  var canvas = document.getElementById('camera-canvas');
+  if (!video || video.videoWidth === 0) return;
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  var ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  // Try native BarcodeDetector first (Chrome/Edge/Android — fastest)
+  if ('BarcodeDetector' in window) {
+    var detector = new BarcodeDetector({ formats: ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code'] });
+    detector.detect(canvas).then(function(barcodes) {
+      if (barcodes.length > 0) onBarcodeFound(barcodes[0].rawValue);
+    }).catch(function(){});
+    return;
+  }
+
+  // ZXing fallback
+  if (zxingReady && ZXing) {
+    var imgData = canvas.toDataURL('image/jpeg', 0.9);
+    var img = new Image();
+    img.onload = function() {
+      try {
+        var reader = new ZXing.BrowserMultiFormatReader();
+        var result = reader.decodeFromImageElement(img);
+        if (result && result.text) onBarcodeFound(result.text);
+      } catch(e) {}
+    };
+    img.src = imgData;
+  }
+}
+
+function onBarcodeFound(barcode) {
+  if (scanLocked || barcode === lastScanned) return;
+  lastScanned = barcode; scanLocked = true;
+  if (navigator.vibrate) navigator.vibrate(100);
+  console.log('[EcoMind] Barcode:', barcode);
+  setStatus('found', '✅ Barcode detected: <strong>' + barcode + '</strong> — fetching product…');
+  lookupBarcode(barcode);
+  setTimeout(function() { scanLocked = false; }, 8000);
+}
+
+// ═══════════════════════════════════════
+// BARCODE LOOKUP
+// Tries browser fetch first (no server needed),
+// falls back to Django proxy if browser fetch blocked.
+// ═══════════════════════════════════════
+async function lookupBarcode(barcode) {
+  barcode = String(barcode).trim().replace(/\s/g,'');
+  if (!barcode) return;
+  showLoading(true);
+  setLoadingMsg('Looking up barcode ' + barcode + '…');
+  hide('scan-empty'); hide('verdict-card'); hide('scan-error');
+
+  var found = null;
+
+  // ── Step 1: Try browser-side Open Food Facts (no User-Agent = no CORS block) ──
+  var offUrls = [
+    'https://world.openfoodfacts.org/api/v0/product/' + barcode + '.json',
+    'https://in.openfoodfacts.org/api/v0/product/' + barcode + '.json',
+    'https://world.openbeautyfacts.org/api/v0/product/' + barcode + '.json',
+  ];
+
+  for (var i = 0; i < offUrls.length; i++) {
+    setLoadingMsg('Searching database ' + (i+1) + ' of 5…');
+    try {
+      var r = await fetch(offUrls[i]);   // NO custom headers — avoids CORS preflight block
+      if (!r.ok) continue;
+      var d = await r.json();
+      var p = d.product;
+      if (!p) continue;
+      var name = (p.product_name || p.product_name_en || p.product_name_hi ||
+                  p.generic_name || p.abbreviated_product_name || '').trim();
+      if (!name) continue;
+
+      console.log('[EcoMind] Found via browser fetch:', name);
+      found = buildProductFromOFF(p, offUrls[i]);
+      break;
+    } catch(e) {
+      console.warn('[EcoMind] Browser fetch failed for', offUrls[i], ':', e.message);
+    }
+  }
+
+  // ── Step 2: UPCitemdb (browser fetch, no auth needed for trial) ──
+  if (!found) {
+    setLoadingMsg('Searching UPCitemdb…');
+    try {
+      var r2 = await fetch('https://api.upcitemdb.com/prod/trial/lookup?upc=' + barcode);
+      if (r2.ok) {
+        var d2 = await r2.json();
+        if (d2.code === 'OK' && d2.items && d2.items[0] && d2.items[0].title) {
+          var item = d2.items[0];
+          found = {
+            name: item.title, brand: item.brand || '',
+            category: guessCategory(item.category||'', item.title+' '+(item.description||'')),
+            materials: item.ingredients || '', cert: '',
+            description: (item.description||'').substring(0,300), quantity: '',
+            source: 'UPCitemdb'
+          };
+          console.log('[EcoMind] Found via UPCitemdb:', found.name);
+        }
+      }
+    } catch(e) { console.warn('[EcoMind] UPCitemdb failed:', e.message); }
+  }
+
+  // ── Step 3: Django proxy fallback (in case browser fetch is blocked) ──
+  if (!found) {
+    setLoadingMsg('Trying server-side lookup…');
+    try {
+      var r3 = await fetch('/api/barcode/?code=' + encodeURIComponent(barcode));
+      var d3 = await r3.json();
+      if (d3.found) { found = d3; console.log('[EcoMind] Found via Django proxy:', d3.name); }
+    } catch(e) { console.warn('[EcoMind] Django proxy failed:', e.message); }
+  }
+
+  showLoading(false);
+
+  if (found && found.name) {
+    setStatus('found', '✅ Found: <strong>' + found.name + '</strong>' + (found.brand ? ' by ' + found.brand : '') + ' · via ' + (found.source||'database'));
+    document.getElementById('fetched-name').textContent = found.name + (found.brand ? ' — ' + found.brand : '');
+    document.getElementById('fetched-meta').textContent =
+      [found.category, found.quantity, found.cert ? 'Labels: ' + found.cert : ''].filter(Boolean).join(' · ');
+    document.getElementById('fetched-preview').classList.add('visible');
+    autoFillForm(found);
+    setTimeout(function(){ runScan(true); }, 800);
+  } else {
+    setStatus('error', '⚠️ Barcode <strong>' + barcode + '</strong> not found in any database. Enter product name below.');
+    switchMode('manual');
+    document.getElementById('inp-name').placeholder = 'Enter product name (barcode: ' + barcode + ')';
+    document.getElementById('inp-name').focus();
+    show('scan-empty');
+    scanLocked = false;
+  }
+}
+
+function buildProductFromOFF(p, url) {
+  var name        = (p.product_name||p.product_name_en||p.product_name_hi||p.generic_name||p.abbreviated_product_name||'').trim();
+  var brand       = (p.brands||'').split(',')[0].trim();
+  var ingredients = (p.ingredients_text||p.ingredients_text_en||'').substring(0,400);
+  var labels      = (p.labels_tags||[]).map(function(l){ return l.replace(/^(en:|fr:|de:)/,'').replace(/-/g,' '); }).join(', ');
+  var packaging   = (p.packaging_tags||[]).map(function(x){ return x.replace(/^(en:|fr:)/,'').replace(/-/g,' '); }).join(', ');
+  var quantity    = p.quantity||'';
+  var countries   = (p.countries_tags||[]).map(function(c){ return c.replace(/^en:/,''); }).join(', ');
+  var cats        = ((p.categories_tags||[]).join(' ')+' '+(p.categories||'')).toLowerCase();
+  var category    = 'Food';
+  if (cats.match(/shirt|cloth|apparel|jacket|dress|wear|jean/)) category='Clothing';
+  else if (cats.match(/shoe|boot|footwear|sandal/))             category='Footwear';
+  else if (cats.match(/cosmetic|beauty|shampoo|lotion|cream|soap|hair|skin|perfume/)) category='Personal Care';
+  else if (cats.match(/baby|infant|diaper/))                    category='Baby';
+  else if (cats.match(/kitchen|cleaning|detergent/))            category='Kitchen';
+  var desc = [];
+  if (ingredients) desc.push('Ingredients: '+ingredients);
+  if (packaging)   desc.push('Packaging: '+packaging);
+  if (quantity)    desc.push('Quantity: '+quantity);
+  if (countries)   desc.push('Made in: '+countries);
+  return { name:name, brand:brand, category:category, materials:ingredients,
+           cert:labels, description:desc.join('. '), quantity:quantity,
+           source: url ? url.split('/')[2] : 'Open Food Facts' };
+}
+
+function guessCategory(cat, text) {
+  var t = (cat+' '+text).toLowerCase();
+  if (t.match(/shirt|cloth|apparel|jacket|dress|fashion/)) return 'Clothing';
+  if (t.match(/shoe|boot|footwear|sandal/))                return 'Footwear';
+  if (t.match(/cosmetic|beauty|shampoo|lotion|cream|soap|hair/)) return 'Personal Care';
+  if (t.match(/food|snack|drink|beverage|eat/))            return 'Food';
+  return 'General';
+}
+
+function lookupManualBarcode() {
+  var code = document.getElementById('manual-barcode').value.trim();
+  if (!code) { document.getElementById('manual-barcode').focus(); return; }
+  lookupBarcode(code);
+}
+
+// ═══════════════════════════════════════
+// AUTO-FILL FORM
+// ═══════════════════════════════════════
+function autoFillForm(data) {
+  switchMode('manual');
+  function fill(id, val) {
+    if (!val) return;
+    var el = document.getElementById(id);
+    el.value = val;
+    el.classList.add('autofilled');
+    setTimeout(function(){ el.classList.remove('autofilled'); }, 2500);
+  }
+  fill('inp-name',        data.name);
+  fill('inp-brand',       data.brand);
+  fill('inp-materials',   data.materials);
+  fill('inp-cert',        data.cert);
+  fill('inp-description', data.description);
+  if (data.category) {
+    var sel = document.getElementById('inp-category');
+    for (var i=0; i<sel.options.length; i++) {
+      if (sel.options[i].value === data.category) { sel.value = data.category; break; }
+    }
+  }
+  var banner = document.getElementById('autofill-banner');
+  banner.style.background = ''; banner.style.borderColor = '';
+  document.getElementById('autofill-msg').textContent = '✅ Form auto-filled from barcode scan. Edit any field before analysing.';
+  banner.classList.add('visible');
+}
+
+// ═══════════════════════════════════════
+// ECOMINDNET SCAN
+// ═══════════════════════════════════════
+async function runScan(silent) {
+  var name = document.getElementById('inp-name').value.trim();
+  if (!name) {
+    switchMode('manual');
+    var inp = document.getElementById('inp-name');
+    inp.focus(); inp.style.borderColor='rgba(248,113,113,0.6)';
+    setTimeout(function(){ inp.style.borderColor=''; }, 2000);
+    return;
+  }
+  setLoadingMsg('EcoMindNet is analysing the product…');
+  showLoading(true);
+  hide('scan-empty'); hide('verdict-card'); hide('scan-error'); hide('scan-suggestions');
+  var btn = document.getElementById('scan-btn');
+  btn.disabled=true;
+  document.getElementById('btn-icon').textContent='⏳';
+  document.getElementById('btn-text').textContent='Analysing…';
+  var payload = {
+    name:        name,
+    brand:       document.getElementById('inp-brand').value.trim(),
+    category:    document.getElementById('inp-category').value,
+    description: document.getElementById('inp-description').value.trim(),
+    materials:   document.getElementById('inp-materials').value.trim(),
+    cert:        document.getElementById('inp-cert').value.trim(),
+    price:       document.getElementById('inp-price').value.trim(),
+  };
+  try {
+    var res  = await fetch('/api/scan/', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    var data = await res.json();
+    if (data.error) throw new Error(data.error);
+    showLoading(false);
+    renderResult(data, payload);
+  } catch(err) {
+    showLoading(false);
+    showError('⚠️ '+(err.message||'Something went wrong.'));
+  } finally {
+    btn.disabled=false;
+    document.getElementById('btn-icon').textContent='🔍';
+    document.getElementById('btn-text').textContent='Analyse Product';
+  }
+}
+
+// ═══════════════════════════════════════
+// RENDER RESULTS
+// ═══════════════════════════════════════
+var _lastScanData=null, _lastScanPayload=null;
+
+function renderResult(data, payload) {
+  var s=data.scores||{}, v=data.verdict||{label:'—',color:'#4ade80',icon:'📦',message:'Score computed.'},
+      c=data.carbon||{level:'moderate',label:'Moderate',color:'#fbbf24',estimate:'Unknown'};
+  data.tags=Array.isArray(data.tags)?data.tags:[];
+  _lastScanData=data; _lastScanPayload=payload;
+
+  document.getElementById('v-icon-wrap').textContent=getCategoryIcon(payload.category);
+  document.getElementById('v-name').textContent=data.product.name;
+  document.getElementById('v-meta').textContent=[data.product.brand,data.product.category].filter(Boolean).join(' · ')||'Scanned product';
+  document.getElementById('v-verdict-label').textContent=v.icon+' '+v.label;
+  document.getElementById('v-verdict-label').style.color=v.color;
+  document.getElementById('v-msg').textContent=v.message;
+  document.getElementById('v-msg').style.borderLeftColor=v.color;
+  document.getElementById('v-eco').textContent=s.eco_score;
+  document.getElementById('v-ethics').textContent=s.ethics_score;
+  document.getElementById('v-overall').textContent=s.overall_score;
+  document.getElementById('v-conf').textContent=s.confidence;
+
+  setTimeout(function(){
+    document.getElementById('bar-eco').style.width=(s.eco_score/10*100)+'%';
+    document.getElementById('bar-ethics').style.width=(s.ethics_score/10*100)+'%';
+    document.getElementById('bar-overall').style.width=(s.overall_score/10*100)+'%';
+    document.getElementById('bar-conf').style.width=s.confidence+'%';
+  },120);
+
+  var cl=c.level?String(c.level):'moderate', cc=c.color||'#fbbf24';
+  var cw={ultra_low:15,low:35,moderate:65,high:95};
+  document.getElementById('v-carbon-label').textContent=(c.label||cl)+' Carbon Footprint';
+  document.getElementById('v-carbon-label').style.color=cc;
+  document.getElementById('v-carbon-est').textContent='Estimated: '+(c.estimate||'—');
+  document.getElementById('v-carbon-badge').textContent=cl.replace(/_/g,' ').toUpperCase();
+  document.getElementById('v-carbon-badge').style.background=cc+'22';
+  document.getElementById('v-carbon-badge').style.color=cc;
+  setTimeout(function(){
+    document.getElementById('bar-carbon').style.width=(cw[cl]||50)+'%';
+    document.getElementById('bar-carbon').style.background=cc;
+  },120);
+
+  var tagsEl=document.getElementById('v-tags');
+  tagsEl.innerHTML=data.tags.length>0
+    ?data.tags.map(function(t){return '<span class="scan-tag">'+formatTag(t)+'</span>';}).join('')
+    :'<span class="no-tags">No specific ethical labels detected</span>';
+  document.getElementById('conf-txt').textContent='Prediction confidence: '+s.confidence+'%';
+
+  var sb=document.getElementById('save-btn'),sm=document.getElementById('save-msg'),sp=document.getElementById('save-login-prompt');
+  if(sb){sb.disabled=false;sb.textContent='💾 Save to My Account';sb.className='save-product-btn';}
+  if(sm){sm.textContent='';sm.className='save-msg';}
+  if(sp)sp.style.display='none';
+
+  show('verdict-card'); show('scan-suggestions');
+  document.getElementById('verdict-card').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ═══════════════════════════════════════
+// SAVE PRODUCT
+// ═══════════════════════════════════════
+async function saveProduct() {
+  var btn=document.getElementById('save-btn'),msg=document.getElementById('save-msg'),prompt=document.getElementById('save-login-prompt');
+  if(!_lastScanData) return;
+  try {
+    var sr=await fetch('/api/auth/status/'); var sd=await sr.json();
+    if(!sd.logged_in){btn.style.display='none';prompt.style.display='block';return;}
+  } catch(e){msg.textContent='Could not check login.';msg.className='save-msg err';return;}
+  btn.disabled=true; btn.textContent='⏳ Saving…'; msg.textContent=''; msg.className='save-msg';
+  var s=_lastScanData.scores||{},c=_lastScanData.carbon||{};
+  try {
+    var res=await fetch('/api/save-product/',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:_lastScanPayload.name,brand:_lastScanPayload.brand,
+        category:_lastScanPayload.category,description:_lastScanPayload.description,
+        materials:_lastScanPayload.materials,cert:_lastScanPayload.cert,
+        price:_lastScanPayload.price||null,eco_score:s.eco_score,
+        ethics_score:s.ethics_score,overall_score:s.overall_score,
+        carbon_level:c.level,tags:_lastScanData.tags||[],source:'barcode'})
+    });
+    var data=await res.json();
+    if(data.error) throw new Error(data.error);
+    btn.textContent='✅ Saved!'; btn.className='save-product-btn saved';
+    msg.textContent=data.message+' DB now has '+data.total_products+' products.'; msg.className='save-msg ok';
+  } catch(err){
+    btn.disabled=false; btn.textContent='💾 Save to My Account';
+    msg.textContent=err.message||'Save failed.'; msg.className='save-msg err';
+  }
+}
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function formatTag(t){var m={organic:'🌱 Organic',fair_trade:'🤝 Fair Trade',vegan:'🐇 Vegan',recycled:'♻️ Recycled',natural:'🌿 Natural'};return m[t]||t;}
+function getCategoryIcon(cat){var m={Clothing:'👕',Footwear:'👟',Food:'🥗','Personal Care':'🧴',Kitchen:'🍳',Home:'🏠',Sportswear:'⚽',Electronics:'💻',Baby:'🍼',Accessories:'👜',Outdoors:'🏕️',General:'📦'};return m[cat]||'📦';}
+function fillExample(n,b,c,m,ce,d){switchMode('manual');document.getElementById('inp-name').value=n;document.getElementById('inp-brand').value=b;document.getElementById('inp-category').value=c;document.getElementById('inp-materials').value=m;document.getElementById('inp-cert').value=ce;document.getElementById('inp-description').value=d;}
+function showLoading(on){document.getElementById('scan-loading').style.display=on?'block':'none';}
+function setLoadingMsg(m){document.getElementById('loading-text').textContent=m;}
+function setStatus(type,html){var el=document.getElementById('barcode-status');el.className='barcode-status '+type;el.innerHTML=html;el.style.display=html?'flex':'none';}
+function show(id){document.getElementById(id).style.display='block';}
+function hide(id){document.getElementById(id).style.display='none';}
+function showError(msg){var el=document.getElementById('scan-error');el.textContent=msg;show('scan-error');show('scan-empty');}
+document.getElementById('inp-name').addEventListener('keydown',function(e){if(e.key==='Enter')runScan();});
+document.getElementById('manual-barcode').addEventListener('keydown',function(e){if(e.key==='Enter')lookupManualBarcode();});
+</script>
+
+{% endblock %}

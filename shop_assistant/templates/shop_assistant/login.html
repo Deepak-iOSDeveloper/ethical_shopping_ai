@@ -1,0 +1,283 @@
+{% extends 'shop_assistant/base.html' %}
+{% block title %}Login — EcoMind AI{% endblock %}
+
+{% block extra_head %}
+<style>
+  .login-wrap {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+  }
+  .login-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem 2rem;
+    width: 100%;
+    max-width: 420px;
+    animation: fadeUp 0.4s ease both;
+  }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+
+  .login-logo { text-align: center; margin-bottom: 1.75rem; }
+  .login-logo-icon { font-size: 2.5rem; display: block; margin-bottom: 0.4rem; }
+  .login-logo-title {
+    font-family: var(--font-display);
+    font-size: 1.5rem; font-weight: 700;
+    background: linear-gradient(135deg,#e8f5ee,#4ade80);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .login-logo-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+  .step { display: none; }
+  .step.active { display: block; }
+
+  .step-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; margin-bottom: 0.35rem; }
+  .step-sub { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.65; }
+
+  .auth-input {
+    width: 100%; box-sizing: border-box;
+    background: var(--bg-mid);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-family: var(--font-body);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    margin-bottom: 1rem;
+  }
+  .auth-input:focus {
+    border-color: rgba(74,222,128,0.5);
+    box-shadow: 0 0 0 3px rgba(74,222,128,0.08);
+  }
+  .otp-input {
+    font-family: var(--font-mono);
+    font-size: 1.6rem;
+    letter-spacing: 0.3em;
+    text-align: center;
+  }
+
+  .auth-btn {
+    width: 100%;
+    background: rgba(74,222,128,0.12);
+    border: 1px solid rgba(74,222,128,0.35);
+    color: var(--green-bright);
+    font-family: var(--font-display);
+    font-size: 0.95rem; font-weight: 700;
+    padding: 0.8rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  }
+  .auth-btn:hover:not(:disabled) { background: rgba(74,222,128,0.2); transform: translateY(-1px); }
+  .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .auth-msg {
+    font-size: 0.8rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: var(--radius);
+    margin-top: 0.75rem;
+    display: none;
+  }
+  .auth-msg.error { display:block; background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.2); color:#f87171; }
+  .auth-msg.success { display:block; background:rgba(74,222,128,0.08); border:1px solid rgba(74,222,128,0.2); color:var(--green-bright); }
+
+  .resend-row { text-align: center; margin-top: 1rem; font-size: 0.78rem; color: var(--text-muted); }
+  .resend-link { color: var(--green-pale); cursor: pointer; text-decoration: underline; }
+  .resend-link:hover { color: var(--green-bright); }
+
+  .email-display {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--green-pale);
+    background: rgba(74,222,128,0.06);
+    border: 1px solid rgba(74,222,128,0.12);
+    border-radius: 6px;
+    padding: 5px 10px;
+    display: inline-block;
+    margin-bottom: 1rem;
+  }
+
+  .login-benefits {
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+  }
+  .login-benefits-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 0.65rem; }
+  .benefit { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+  .benefit-icon { flex-shrink: 0; font-size: 0.9rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-wrap">
+  <div class="login-card">
+
+    <div class="login-logo">
+      <span class="login-logo-icon">🌿</span>
+      <div class="login-logo-title">EcoMind AI</div>
+      <div class="login-logo-sub">Sign in to save and track your scans</div>
+    </div>
+
+    <!-- Step 1: Enter email -->
+    <div class="step active" id="step-email">
+      <div class="step-title">Enter your email</div>
+      <div class="step-sub">We'll send you a 6-digit code. No password needed.</div>
+      <input id="inp-email" class="auth-input" type="email" placeholder="you@gmail.com" autocomplete="email" />
+      <button class="auth-btn" id="btn-send" onclick="sendOTP()">
+        <span id="send-icon">📧</span>
+        <span id="send-text">Send Login Code</span>
+      </button>
+      <div class="auth-msg" id="msg-email"></div>
+
+      <div class="login-benefits">
+        <div class="login-benefits-title">Why sign in?</div>
+        <div class="benefit"><span class="benefit-icon">💾</span> Save scanned products to your account</div>
+        <div class="benefit"><span class="benefit-icon">📊</span> Your saved products improve the AI for everyone</div>
+        <div class="benefit"><span class="benefit-icon">📋</span> View your full scan history anytime</div>
+        <div class="benefit"><span class="benefit-icon">🔒</span> No password — just email + OTP</div>
+      </div>
+    </div>
+
+    <!-- Step 2: Enter OTP -->
+    <div class="step" id="step-otp">
+      <div class="step-title">Check your email</div>
+      <div class="step-sub">We sent a 6-digit code to:</div>
+      <div class="email-display" id="otp-email-display">—</div>
+      <input id="inp-otp" class="auth-input otp-input" type="text" inputmode="numeric"
+             maxlength="6" placeholder="000000" autocomplete="one-time-code" />
+      <button class="auth-btn" id="btn-verify" onclick="verifyOTP()">
+        <span id="verify-icon">✅</span>
+        <span id="verify-text">Verify Code</span>
+      </button>
+      <div class="auth-msg" id="msg-otp"></div>
+      <div class="resend-row">
+        Didn't receive it? <span class="resend-link" onclick="resendOTP()">Resend code</span>
+        &nbsp;·&nbsp; <span class="resend-link" onclick="backToEmail()">Change email</span>
+      </div>
+    </div>
+
+    <!-- Step 3: Success -->
+    <div class="step" id="step-done">
+      <div style="text-align:center;padding:1rem 0;">
+        <div style="font-size:2.5rem;margin-bottom:0.75rem;">🎉</div>
+        <div class="step-title" style="text-align:center;">You're logged in!</div>
+        <div class="step-sub" style="text-align:center;">Redirecting you back…</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let currentEmail = '';
+
+document.getElementById('inp-email').addEventListener('keydown', e => { if(e.key==='Enter') sendOTP(); });
+document.getElementById('inp-otp').addEventListener('keydown',   e => { if(e.key==='Enter') verifyOTP(); });
+document.getElementById('inp-otp').addEventListener('input', e => {
+  e.target.value = e.target.value.replace(/\D/g,'').slice(0,6);
+  if (e.target.value.length === 6) verifyOTP();
+});
+
+async function sendOTP() {
+  const email = document.getElementById('inp-email').value.trim().toLowerCase();
+  if (!email || !email.includes('@')) {
+    showMsg('msg-email', 'error', 'Please enter a valid email address.');
+    return;
+  }
+  currentEmail = email;
+  setBtn('btn-send','send-icon','send-text','⏳','Sending…',true);
+  hideMsg('msg-email');
+
+  try {
+    const res  = await fetch('/api/auth/send-otp/', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email})
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    document.getElementById('otp-email-display').textContent = email;
+    showStep('step-otp');
+    setTimeout(() => document.getElementById('inp-otp').focus(), 100);
+
+    // Show if email was actually sent or only in terminal
+    if (data.dev_mode) {
+      showMsg('msg-otp', 'error',
+        (data.email_error ? '⚠️ Email error: ' + data.email_error + '. ' : '') +
+        '📋 OTP printed in server terminal — copy it from there.'
+      );
+    } else {
+      showMsg('msg-otp', 'success', '✅ OTP sent to ' + email + '. Check your inbox.');
+    }
+  } catch(err) {
+    showMsg('msg-email','error', err.message || 'Failed to send code. Try again.');
+  } finally {
+    setBtn('btn-send','send-icon','send-text','📧','Send Login Code',false);
+  }
+}
+
+async function verifyOTP() {
+  const code = document.getElementById('inp-otp').value.trim();
+  if (code.length !== 6) { showMsg('msg-otp','error','Enter the 6-digit code.'); return; }
+  setBtn('btn-verify','verify-icon','verify-text','⏳','Verifying…',true);
+  hideMsg('msg-otp');
+
+  try {
+    const res  = await fetch('/api/auth/verify-otp/', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email: currentEmail, code})
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    showStep('step-done');
+    // Redirect back to where they came from, or scan page
+    const next = new URLSearchParams(window.location.search).get('next') || '/scan/';
+    setTimeout(() => window.location.href = next, 1200);
+  } catch(err) {
+    showMsg('msg-otp','error', err.message || 'Invalid code. Please try again.');
+    document.getElementById('inp-otp').value = '';
+    document.getElementById('inp-otp').focus();
+  } finally {
+    setBtn('btn-verify','verify-icon','verify-text','✅','Verify Code',false);
+  }
+}
+
+async function resendOTP() {
+  document.getElementById('inp-otp').value = '';
+  hideMsg('msg-otp');
+  await sendOTP();
+  if (currentEmail) showMsg('msg-otp','success','New code sent!');
+}
+
+function backToEmail() {
+  showStep('step-email');
+  document.getElementById('inp-email').focus();
+}
+
+function showStep(id) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showMsg(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = 'auth-msg ' + type;
+  el.textContent = msg;
+}
+function hideMsg(id) {
+  document.getElementById(id).className = 'auth-msg';
+  document.getElementById(id).textContent = '';
+}
+function setBtn(btnId, iconId, textId, icon, text, disabled) {
+  document.getElementById(btnId).disabled = disabled;
+  document.getElementById(iconId).textContent = icon;
+  document.getElementById(textId).textContent = text;
+}
+</script>
+{% endblock %}

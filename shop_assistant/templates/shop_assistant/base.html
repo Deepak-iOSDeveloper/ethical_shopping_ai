@@ -331,7 +331,23 @@
     <li><a href="{% url 'shop_assistant:home' %}" class="{% if page == 'home' %}active{% endif %}">Home</a></li>
     <li><a href="{% url 'shop_assistant:recommend' %}" class="{% if page == 'recommend' %}active{% endif %}">Discover</a></li>
     <li><a href="{% url 'shop_assistant:about' %}" class="{% if page == 'about' %}active{% endif %}">How It Works</a></li>
+    <li><a href="{% url 'shop_assistant:scan' %}" class="{% if page == 'scan' %}active{% endif %}" style="color:var(--green-bright);font-weight:600;">🔍 Scan Product</a></li>
   </ul>
+  <div id="nav-auth" style="margin-left:1rem;">
+    <a href="{% url 'shop_assistant:signin' %}" id="nav-login-btn"
+       style="background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.25);
+              color:var(--green-bright);padding:5px 14px;border-radius:8px;
+              font-size:0.8rem;font-weight:700;text-decoration:none;display:none;">
+      Login
+    </a>
+    <div id="nav-user-pill" style="display:none;align-items:center;gap:0.5rem;">
+      <span style="font-size:0.75rem;color:var(--text-muted);" id="nav-user-email"></span>
+      <button onclick="doLogout()"
+        style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);
+               color:#f87171;padding:3px 10px;border-radius:6px;font-size:0.72rem;
+               cursor:pointer;font-weight:600;">Logout</button>
+    </div>
+  </div>
 </nav>
 
 <!-- MAIN -->
@@ -342,7 +358,7 @@
 <!-- FOOTER -->
 <footer class="footer">
   <p>🌱 EcoMind AI — Ethical Shopping Assistant &nbsp;|&nbsp;
-     &copy; 2026 &nbsp;|&nbsp; Built with ❤️ by DEEPAK, SACHIN & NITISH |
+     Built with Django · NumPy · Pandas · Scikit-learn &nbsp;|&nbsp;
      <a href="{% url 'shop_assistant:about' %}">How the AI works</a>
   </p>
 </footer>
@@ -683,7 +699,7 @@
 
     fetch('/api/chat/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text })
     })
     .then(r => r.json())
@@ -783,19 +799,32 @@
   }
 
 })();
-    function getCookie(name) {
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length + 1) === (name + '=')) {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
+</script>
+
+<script>
+// ── Auth state — runs on every page ────────────────────
+(async function checkAuthState() {
+  try {
+    const res  = await fetch('/api/auth/status/');
+    const data = await res.json();
+    const loginBtn  = document.getElementById('nav-login-btn');
+    const userPill  = document.getElementById('nav-user-pill');
+    const userEmail = document.getElementById('nav-user-email');
+    if (!loginBtn) return;
+    if (data.logged_in) {
+      loginBtn.style.display  = 'none';
+      userPill.style.display  = 'flex';
+      userEmail.textContent   = data.email;
+    } else {
+      loginBtn.style.display  = 'inline-block';
+      userPill.style.display  = 'none';
     }
-  }
-  return cookieValue;
+  } catch(e) {}
+})();
+
+async function doLogout() {
+  await fetch('/api/auth/logout/', {method:'POST'});
+  window.location.reload();
 }
 </script>
 </body>
