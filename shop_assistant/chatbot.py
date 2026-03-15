@@ -60,7 +60,30 @@ CATEGORY_KEYWORDS = {
     ],
     "Baby & Kids": [
         "baby", "kids", "child", "infant", "toddler", "toy", "diaper", "onesie",
-        "swaddle", "teether",
+        "swaddle", "teether", "baby care", "newborn",
+    ],
+    "Baby": [
+        "baby", "infant", "newborn", "toddler", "diaper", "onesie", "baby soap",
+        "baby oil", "baby wipes", "teether", "baby food",
+    ],
+    "Health": [
+        "health", "tablet", "capsule", "supplement", "vitamin", "ayurvedic",
+        "triphala", "tulsi", "giloy", "ashwagandha", "immunity", "sanitizer",
+        "tongue cleaner", "datun", "wellness", "herbal", "medicine",
+    ],
+    "Cleaning": [
+        "cleaning", "cleaner", "detergent", "laundry", "dish wash", "dishwash",
+        "toilet cleaner", "floor cleaner", "window cleaner", "soap nut", "soapnut",
+        "washing powder", "mop", "broom", "scrubber", "cloth wipe",
+    ],
+    "Stationery": [
+        "notebook", "pen", "pencil", "stationery", "diary", "journal",
+        "notepad", "bulletin board", "cork board", "school", "writing", "office",
+        "paper", "study", "seed paper", "recycled paper",
+    ],
+    "Pet Care": [
+        "pet", "dog", "cat", "puppy", "kitten", "pet food", "pet shampoo",
+        "collar", "leash", "pet bowl", "cat litter", "dog treat", "animal",
     ],
 }
 
@@ -285,9 +308,15 @@ def parse_and_respond(user_message, model):
         mask = df["category"].isin(categories)
         df = df[mask]
 
-    # Filter by budget
+    # Filter by budget — gracefully relax if too tight
+    budget_relaxed = False
     if budget_usd:
-        df = df[df["price"] <= budget_usd]
+        strict = df[df["price"] <= budget_usd]
+        if strict.empty:
+            # Budget too tight: show cheapest available with a note
+            budget_relaxed = True
+        else:
+            df = strict
 
     # Filter by keyword
     if keyword:
@@ -337,10 +366,10 @@ def parse_and_respond(user_message, model):
         return _no_results_response(text, budget_usd, categories)
 
     # ── Predict scores & build HTML ───────────────────────────
-    return _build_results_html(results, text, budget_usd, categories, eth_filters, model)
+    return _build_results_html(results, text, budget_usd, categories, eth_filters, model, budget_relaxed)
 
 
-def _build_results_html(results, query, budget_usd, categories, eth_filters, model):
+def _build_results_html(results, query, budget_usd, categories, eth_filters, model, budget_relaxed=False):
     """Render the product results as rich HTML for the chat bubble."""
     budget_inr = int(budget_usd * 83) if budget_usd else None
 
@@ -349,7 +378,12 @@ def _build_results_html(results, query, budget_usd, categories, eth_filters, mod
     budget_str = f" under ₹{budget_inr}" if budget_inr else ""
     filter_str = ", ".join(eth_filters).replace("_", " ") if eth_filters else ""
 
-    summary = f'<p style="font-size:0.82rem;color:#8aaa94;margin-bottom:1rem;">Found <strong style="color:#4ade80">{len(results)}</strong> ethical products in <em>{cat_str}</em>{budget_str}'
+    if budget_relaxed:
+        min_price_inr = int(results["price"].min() * 83)
+        summary = f'<p style="font-size:0.82rem;color:#fbbf24;margin-bottom:0.5rem;">⚠️ No products found under ₹{budget_inr}. Showing closest matches starting from ₹{min_price_inr}.</p>'
+        summary += f'<p style="font-size:0.82rem;color:#8aaa94;margin-bottom:1rem;">Found <strong style="color:#4ade80">{len(results)}</strong> products in <em>{cat_str}</em>'
+    else:
+        summary = f'<p style="font-size:0.82rem;color:#8aaa94;margin-bottom:1rem;">Found <strong style="color:#4ade80">{len(results)}</strong> ethical products in <em>{cat_str}</em>{budget_str}'
     if filter_str:
         summary += f' · filters: <em>{filter_str}</em>'
     summary += '</p>'

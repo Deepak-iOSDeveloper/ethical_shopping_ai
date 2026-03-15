@@ -54,36 +54,57 @@ def recommend(request):
 
 
 def product_detail(request, product_name):
-    model = get_model()
-    product_name = unquote(unquote(product_name))
-    df = model.df[model.df['name'] == product_name]
-    if df.empty:
-        raise Http404("Product not found.")
-    product = df.iloc[0].to_dict()
-    product['ethical_probability'] = model.predict_ethical_rating(
-        product['eco_score'], product['ethics_score'],
-        product['carbon_footprint'], product['price'])
-    product['brand_story'] = model.get_brand_story(product['brand'])
+    try:
+        ai_model = get_model()
+        product_name = unquote(unquote(product_name))
+        df = ai_model.df[ai_model.df['name'] == product_name]
+        if df.empty:
+            raise Http404("Product not found.")
+        product = df.iloc[0].to_dict()
 
-    # Fields the template needs
-    mats = str(product.get('materials', ''))
-    product['materials_list'] = [m.strip() for m in mats.replace(',', '_').replace('_', ',').split(',') if m.strip()]
+        # Safe numeric conversions
+        for field in ['eco_score','ethics_score','carbon_footprint','price','composite_score']:
+            try:
+                product[field] = float(product.get(field) or 0)
+            except (TypeError, ValueError):
+                product[field] = 0.0
 
-    price = float(product.get('price', 0))
-    if price < 15:      product['price_tier'] = 'budget'
-    elif price < 50:    product['price_tier'] = 'affordable'
-    elif price < 150:   product['price_tier'] = 'mid'
-    elif price < 500:   product['price_tier'] = 'premium'
-    else:               product['price_tier'] = 'luxury'
+        product['ethical_probability'] = ai_model.predict_ethical_rating(
+            product['eco_score'], product['ethics_score'],
+            product['carbon_footprint'], product['price'])
+        product['brand_story'] = ai_model.get_brand_story(product.get('brand',''))
 
-    # Convert price USD → INR for display
-    product['price_inr'] = int(price * 83)
+        # materials_list
+        mats = str(product.get('materials', '') or '')
+        product['materials_list'] = [m.strip() for m in mats.split(',') if m.strip()]
 
-    similar_df = model.get_similar_products(product_name)
-    similar = similar_df.to_dict('records') if not similar_df.empty else []
-    return render(request, 'shop_assistant/product_detail.html', {
-        'product': product, 'similar': similar, 'page': 'detail'
-    })
+        # price_tier
+        price = product['price']
+        if price < 15:       product['price_tier'] = 'budget'
+        elif price < 50:     product['price_tier'] = 'affordable'
+        elif price < 150:    product['price_tier'] = 'mid'
+        elif price < 500:    product['price_tier'] = 'premium'
+        else:                product['price_tier'] = 'luxury'
+
+        # price in INR
+        product['price_inr'] = int(price * 83)
+
+        # sustainability_cert fallback
+        if not product.get('sustainability_cert'):
+            product['sustainability_cert'] = 'N/A'
+
+        similar_df = ai_model.get_similar_products(product_name)
+        similar = similar_df.to_dict('records') if not similar_df.empty else []
+        return render(request, 'shop_assistant/product_detail.html', {
+            'product': product, 'similar': similar, 'page': 'detail'
+        })
+    except Http404:
+        raise
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return render(request, 'shop_assistant/product_detail.html', {
+            'error': str(e), 'product': None, 'similar': [], 'page': 'detail'
+        })
 
 
 @csrf_exempt
@@ -405,156 +426,113 @@ def api_chat(request):
 
     text_lower = message.lower()
 
-    # ── Greeting ──────────────────────────────────────────────
-    greet_words = ["hello", "hi", "hey", "good morning", "good evening", "howdy"]
-    if any(text_lower.startswith(g) for g in greet_words) and len(message.split()) <= 4:
-        return JsonResponse({"html": _greeting_response(), "status": "ok", "engine": "ecomind"})
+    # =====================================================
+    # RNN INTENT CLASSIFIER - EcoMind GRU Neural Network
+    # Classifies: product_search | greeting | help |
+    #   ethical_question | political | vulgar_abusive |
+    #   off_topic | out_of_scope
+    # =====================================================
+    try:
+        from ecomind_rnn.intent_predictor import get_intent_predictor
+        rnn_predictor = get_intent_predictor()
+        rnn_result    = rnn_predictor.predict(message)
+        intent        = rnn_result['intent']
+        confidence    = rnn_result['confidence']
+    except Exception as rnn_err:
+        print(f"[RNN] Error: {rnn_err}")
+        intent     = 'product_search'
+        confidence = 0.5
 
-    # ── Help ──────────────────────────────────────────────────
-    help_words = ["help", "what can you do", "how does", "capabilities"]
-    if any(h in text_lower for h in help_words):
-        return JsonResponse({"html": _help_response(), "status": "ok", "engine": "ecomind"})
+    print(f"[RNN] intent={intent} conf={confidence:.2f} msg='{message[:40]}'")
 
-    # ── Intent Guard — filters all non-shopping queries ───────
+    if intent == 'greeting':
+        return JsonResponse({"html": _greeting_response(), "status": "ok",
+                             "engine": "ecomind_rnn", "intent": intent})
 
-    # 1. Vulgar / abusive language
-    vulgar_words = [
-        "fuck", "shit", "bitch", "asshole", "bastard", "damn", "crap",
-        "dick", "pussy", "cock", "ass", "idiot", "stupid", "dumb", "moron",
-        "hell", "sex", "porn", "nude", "naked", "sexy", "horny", "nsfw",
-    ]
-    if any(v in text_lower for v in vulgar_words):
+    if intent == 'help':
+        return JsonResponse({"html": _help_response(), "status": "ok",
+                             "engine": "ecomind_rnn", "intent": intent})
+
+    if intent == 'ethical_question':
         html = (
-            '<div style="background:#1a1a2e;border:1px solid rgba(248,113,113,0.25);'
-            'border-radius:14px;padding:1.2rem 1.3rem;">'
-            '<div style="font-size:1.1rem;margin-bottom:0.5rem;">🚫</div>'
-            '<p style="color:#f87171;font-weight:700;margin-bottom:0.4rem;font-size:0.9rem;">'
-            'That kind of language isn\'t something I can engage with.</p>'
-            '<p style="color:#8aaa94;font-size:0.8rem;line-height:1.6;">'
-            'I\'m EcoMind — your ethical shopping assistant. '
-            'I\'m here to help you find sustainable, eco-friendly products '
-            'that are good for you and the planet. 🌿<br><br>'
-            'Try asking something like:<br>'
-            '<em style="color:#4ade80;">"Show me organic food under ₹500"</em> or '
-            '<em style="color:#4ade80;">"Fair trade clothing with low carbon footprint"</em>'
-            '</p>'
-            '</div>'
+            '<div style="background:#141f17;border:1px solid rgba(74,222,128,0.2);'
+            'border-radius:14px;padding:1.25rem 1.4rem;">'
+            '<p style="color:#e8f5ee;font-weight:700;font-size:0.9rem;margin-bottom:0.5rem;">'
+            'Good question about sustainable shopping!</p>'
+            '<p style="color:#8aaa94;font-size:0.82rem;line-height:1.7;">'
+            'I specialise in finding products that match your values. Try:<br>'
+            '<em style="color:#4ade80;">"Show certified organic food under 500 rupees"</em>'
+            '</p></div>'
         )
-        return JsonResponse({"html": CARD_STYLES + html, "status": "ok", "engine": "ecomind"})
+        return JsonResponse({"html": CARD_STYLES + html, "status": "ok",
+                             "engine": "ecomind_rnn", "intent": intent})
 
-    # 2. Political questions
-    political_words = [
-        "politics", "political", "election", "vote", "voting", "government",
-        "minister", "prime minister", "president", "mp", "mla", "party",
-        "bjp", "congress", "aap", "modi", "rahul", "kejriwal", "trump",
-        "biden", "democrat", "republican", "labour", "tory", "parliament",
-        "constitution", "war", "military", "army", "protest", "revolution",
-        "abortion", "gun", "religion", "hindu", "muslim", "christian",
-        "temple", "mosque", "church", "caste", "reservation",
-    ]
-    if any(p in text_lower for p in political_words):
+    if intent == 'political':
         html = (
             '<div style="background:#141f17;border:1px solid rgba(251,191,36,0.2);'
-            'border-radius:14px;padding:1.2rem 1.3rem;">'
-            '<div style="font-size:1.1rem;margin-bottom:0.5rem;">🌍</div>'
-            '<p style="color:#fbbf24;font-weight:700;margin-bottom:0.4rem;font-size:0.9rem;">'
-            'That\'s outside my area of expertise.</p>'
-            '<p style="color:#8aaa94;font-size:0.8rem;line-height:1.6;">'
-            'I respect that political and social topics are important — '
-            'but I\'m EcoMind, an ethical shopping assistant, and I\'m not the right '
-            'source for political opinions or discussions.<br><br>'
-            'What I <em>can</em> help with is finding products that align with your '
-            'values — ethically sourced, eco-certified, low carbon footprint. 🌿<br><br>'
-            'Try: <em style="color:#4ade80;">"Show me certified fair trade products"</em>'
-            '</p>'
-            '</div>'
+            'border-radius:14px;padding:1.25rem 1.4rem;">'
+            '<p style="color:#fbbf24;font-weight:700;font-size:0.9rem;margin-bottom:0.4rem;">'
+            'That is outside my area of expertise.</p>'
+            '<p style="color:#8aaa94;font-size:0.82rem;line-height:1.7;">'
+            'I am EcoMind, an ethical shopping assistant. '
+            'I cannot provide political opinions but I can help you find '
+            'products from ethical brands with fair wages and certified supply chains.<br><br>'
+            '<em style="color:#4ade80;">"Show Fair Trade certified products"</em>'
+            '</p></div>'
         )
-        return JsonResponse({"html": CARD_STYLES + html, "status": "ok", "engine": "ecomind"})
+        return JsonResponse({"html": CARD_STYLES + html, "status": "ok",
+                             "engine": "ecomind_rnn", "intent": intent})
 
-    # 3. Gender / discrimination based questions
-    gender_words = [
-        "gender", "feminist", "feminism", "sexist", "sexism", "misogyn",
-        "patriarchy", "lgbtq", "gay", "lesbian", "transgender", "queer",
-        "racist", "racism", "sexist", "discrimination", "inequality",
-    ]
-    if any(g in text_lower for g in gender_words):
+    if intent == 'vulgar_abusive':
         html = (
-            '<div style="background:#141f17;border:1px solid rgba(167,243,193,0.15);'
-            'border-radius:14px;padding:1.2rem 1.3rem;">'
-            '<div style="font-size:1.1rem;margin-bottom:0.5rem;">🤝</div>'
-            '<p style="color:#86efac;font-weight:700;margin-bottom:0.4rem;font-size:0.9rem;">'
-            'I treat every person with equal respect.</p>'
-            '<p style="color:#8aaa94;font-size:0.8rem;line-height:1.6;">'
-            'Social equity topics deserve thoughtful, expert conversation — '
-            'which is beyond what I\'m built for as a shopping assistant.<br><br>'
-            'I do believe in ethical business practices, including fair wages '
-            'and equal treatment of workers in supply chains — and that\'s '
-            'reflected in the products I recommend. 🌿<br><br>'
-            'Try: <em style="color:#4ade80;">"Show me fair trade certified products"</em>'
-            '</p>'
-            '</div>'
+            '<div style="background:#1a1a2e;border:1px solid rgba(248,113,113,0.25);'
+            'border-radius:14px;padding:1.25rem 1.4rem;">'
+            '<p style="color:#f87171;font-weight:700;font-size:0.9rem;margin-bottom:0.4rem;">'
+            'That kind of language is not something I can engage with.</p>'
+            '<p style="color:#8aaa94;font-size:0.82rem;line-height:1.65;">'
+            'I am EcoMind, your ethical shopping assistant. '
+            'I am here to help you find sustainable products.<br><br>'
+            '<em style="color:#4ade80;">"Show organic food under 500 rupees"</em>'
+            '</p></div>'
         )
-        return JsonResponse({"html": CARD_STYLES + html, "status": "ok", "engine": "ecomind"})
+        return JsonResponse({"html": CARD_STYLES + html, "status": "ok",
+                             "engine": "ecomind_rnn", "intent": intent})
 
-    # 4. Off-topic — non-shopping queries
-    off_topic_signals = [
-        # tech/general knowledge
-        "weather", "temperature", "news", "sports", "cricket", "football",
-        "movie", "song", "music", "recipe", "cook", "joke", "poem", "story",
-        "capital of", "who is", "what is the", "how to make", "explain",
-        "tell me about", "define", "meaning of", "translate", "calculate",
-        "math", "solve", "equation", "history of", "write a", "code",
-        "program", "python", "java", "javascript", "chatgpt", "ai model",
-        # vehicles / non-products
-        "car", "bike", "petrol", "diesel", "motorcycle", "vehicle",
-        "flight", "hotel", "travel", "trip", "tour",
-        # health / medical
-        "doctor", "medicine", "hospital", "disease", "symptom", "cure",
-        "covid", "vaccine", "tablet", "prescription",
-        # finance
-        "stock", "crypto", "bitcoin", "invest", "share market", "trading",
-        "loan", "emi", "bank", "insurance",
-    ]
-    if any(o in text_lower for o in off_topic_signals):
-        # Make sure it's truly off-topic and not accidentally matching a product word
-        shopping_signals = [
-            "product", "buy", "shop", "organic", "eco", "sustainable",
-            "ethical", "carbon", "certified", "natural", "vegan", "fair trade",
-            "clothing", "food", "kitchen", "personal care", "footwear",
-            "under", "below", "rupees", "price", "budget",
-        ]
-        is_shopping = any(s in text_lower for s in shopping_signals)
-        if not is_shopping:
-            html = (
-                '<div style="background:#141f17;border:1px solid rgba(74,222,128,0.12);'
-                'border-radius:14px;padding:1.2rem 1.3rem;">'
-                '<div style="font-size:1.1rem;margin-bottom:0.5rem;">🌿</div>'
-                '<p style="color:#e8f5ee;font-weight:700;margin-bottom:0.4rem;font-size:0.9rem;">'
-                'Sorry, I couldn\'t find products related to that.</p>'
-                '<p style="color:#8aaa94;font-size:0.8rem;line-height:1.6;">'
-                'I\'m EcoMind — I specialise exclusively in ethical and eco-friendly '
-                'product recommendations. I\'m not able to help with general questions '
-                'outside of sustainable shopping.<br><br>'
-                'Here\'s what I\'m great at:</p>'
-                '<ul style="color:#8aaa94;font-size:0.78rem;line-height:1.8;'
-                'padding-left:1.2rem;margin:0.4rem 0 0.75rem;">'
-                '<li>Finding <strong style="color:#4ade80;">organic</strong> and '
-                '<strong style="color:#4ade80;">certified</strong> products</li>'
-                '<li>Filtering by <strong style="color:#4ade80;">budget in ₹</strong></li>'
-                '<li>Recommending <strong style="color:#4ade80;">low carbon footprint</strong> items</li>'
-                '<li>Showing <strong style="color:#4ade80;">fair trade</strong> and '
-                '<strong style="color:#4ade80;">vegan</strong> options</li>'
-                '</ul>'
-                '<p style="color:#4a6856;font-size:0.75rem;">Try: '
-                '<em style="color:#4ade80;">"Organic food under ₹500"</em> · '
-                '<em style="color:#4ade80;">"Fair trade clothing"</em> · '
-                '<em style="color:#4ade80;">"Zero waste kitchen products"</em>'
-                '</p>'
-                '</div>'
-            )
-            return JsonResponse({"html": CARD_STYLES + html, "status": "ok", "engine": "ecomind"})
+    if intent == 'off_topic':
+        html = (
+            '<div style="background:#141f17;border:1px solid rgba(74,222,128,0.1);'
+            'border-radius:14px;padding:1.25rem 1.4rem;">'
+            '<p style="color:#e8f5ee;font-weight:700;font-size:0.9rem;margin-bottom:0.4rem;">'
+            'Sorry, that is outside what I can help with.</p>'
+            '<p style="color:#8aaa94;font-size:0.82rem;line-height:1.7;">'
+            'I specialise in ethical and eco-friendly product recommendations. Try:<br><br>'
+            '<em style="color:#4ade80;">"Organic food under 500 rupees"</em> &nbsp;or&nbsp; '
+            '<em style="color:#4ade80;">"Fair trade clothing"</em>'
+            '</p></div>'
+        )
+        return JsonResponse({"html": CARD_STYLES + html, "status": "ok",
+                             "engine": "ecomind_rnn", "intent": intent})
+
+    if intent == 'out_of_scope':
+        html = (
+            '<div style="background:#141f17;border:1px solid rgba(74,222,128,0.1);'
+            'border-radius:14px;padding:1.25rem 1.4rem;">'
+            '<p style="color:#e8f5ee;font-weight:700;font-size:0.9rem;margin-bottom:0.4rem;">'
+            'I am not sure what you are looking for.</p>'
+            '<p style="color:#8aaa94;font-size:0.82rem;line-height:1.7;">'
+            'Try asking about specific products. For example:<br><br>'
+            '<em style="color:#4ade80;">"Show organic food under 300 rupees"</em><br>'
+            '<em style="color:#4ade80;">"Find vegan shampoo"</em><br>'
+            '<em style="color:#4ade80;">"Best eco-friendly clothing"</em>'
+            '</p></div>'
+        )
+        return JsonResponse({"html": CARD_STYLES + html, "status": "ok",
+                             "engine": "ecomind_rnn", "intent": intent})
+
+    # product_search or fallback - proceed to product search pipeline
 
     # ── Step 1: Parse intent ──────────────────────────────────
+
     budget_usd   = _extract_budget_inr(message)
     categories   = _extract_categories(message)
     eth_filters  = _extract_ethical_filters(message)
