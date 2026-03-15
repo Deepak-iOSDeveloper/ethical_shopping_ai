@@ -58,6 +58,12 @@ CATEGORY_KEYWORDS = {
         "phone", "charger", "solar charger", "laptop", "speaker", "keyboard",
         "lamp", "light", "energy", "electronics", "tech", "gadget", "e-bike",
     ],
+    "Accessories": [
+        "bag", "backpack", "wallet", "sunglasses", "tote", "belt", "hat",
+        "umbrella", "laptop bag", "fanny pack", "jewellery", "jewelry", "pendant",
+        "mobile cover", "phone case", "mobile case", "phone cover", "phone pouch",
+        "mobile pouch", "phone stand", "phone holder", "cover", "case",
+    ],
     "Baby & Kids": [
         "baby", "kids", "child", "infant", "toddler", "toy", "diaper", "onesie",
         "swaddle", "teether", "baby care", "newborn",

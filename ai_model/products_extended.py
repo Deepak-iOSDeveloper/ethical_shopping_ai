@@ -256,4 +256,20 @@ EXTENDED_PRODUCTS = [
     ("Terracotta Bead Necklace",       "Khamir",           "Accessories", 9.3, 9.2, 15, "Handcraft",        "terracotta,natural_dye",   0.1,  "Hand-shaped terracotta bead necklace by Kutch artisans. Natural earth pigments."),
     ("Upcycled Sari Wallet",           "Upasana",          "Accessories", 9.4, 9.3, 12, "Handcraft",        "upcycled_silk_sari",       0.1,  "Wallet made from upcycled vintage silk saris. Each piece unique. Zero waste design."),
     ("Hemp Wallet",                    "No Nasties",       "Accessories", 9.2, 9.1, 20, "GOTS",             "organic_hemp",             0.2,  "Slim bifold wallet in durable organic hemp. Naturally antibacterial. RFID blocking."),
+    # ═══════════════════════════════════════════════════════
+    # MOBILE & PHONE ACCESSORIES
+    # ═══════════════════════════════════════════════════════
+    ("Recycled Plastic Mobile Cover",  "Pela Case",        "Accessories", 9.2, 9.0, 4,  "Compostable Certified","compostable_plastic,flax",  0.2, "100% compostable phone case. Made from plant-based materials. Zero plastic waste."),
+    ("Bamboo Phone Case",              "Beco",             "Accessories", 9.4, 9.1, 4,  "FSC Certified",        "bamboo,recycled_plastic",   0.2, "Natural bamboo back panel phone cover. Biodegradable. Fits most smartphones."),
+    ("Cork Mobile Cover",              "Corkor",           "Accessories", 9.3, 9.0, 4,  "Natural",              "cork_leather",              0.1, "Lightweight cork phone case. Natural shock absorption. Vegan and sustainable."),
+    ("Recycled Ocean Plastic Phone Case","Pela Case",      "Accessories", 9.1, 9.2, 5,  "Ocean Plastic Certified","ocean_recycled_plastic",  0.2, "Made from recovered ocean plastic. Each case removes 1kg plastic from ocean."),
+    ("Hemp Phone Cover",               "No Nasties",       "Accessories", 9.2, 9.0, 4,  "GOTS",                 "organic_hemp,recycled_plastic",0.2,"Organic hemp fabric phone cover. Durable and naturally antibacterial."),
+    ("Wheat Straw Mobile Case",        "Incipio",          "Accessories", 8.8, 8.6, 3,  "Recycled",             "wheat_straw,recycled_plastic",0.2,"Phone case made from wheat straw biopolymer. 30% plant-based material."),
+    ("Recycled Leather Phone Wallet",  "Hidesign",         "Accessories", 8.9, 8.8, 6,  "Recycled",             "recycled_leather",          0.3, "Slim phone wallet case from upcycled leather offcuts. Cards and cash slots."),
+    ("Natural Wood Phone Stand",       "Beco",             "Accessories", 9.3, 9.0, 4,  "FSC Certified",        "bamboo_wood",               0.1, "Adjustable bamboo phone and tablet stand. No plastic parts. Desktop essential."),
+    ("Solar Phone Charger Case",       "Blaupunkt",        "Accessories", 8.9, 8.7, 6,  "CE Certified",         "recycled_plastic,solar_panel",0.3,"Built-in solar panel charges your phone. Reduces dependency on grid power."),
+    ("Organic Cotton Phone Pouch",     "Fabindia",         "Accessories", 9.1, 8.9, 3,  "GOTS",                 "organic_cotton",            0.1, "Soft organic cotton phone sleeve with drawstring. Protects screen naturally."),
+    ("Recycled Rubber Phone Bumper",   "Pela Case",        "Accessories", 9.0, 8.8, 3,  "Recycled",             "recycled_rubber",           0.1, "Slim rubber bumper case from recycled tyres. Drop protection, zero virgin rubber."),
+    ("Jute Mobile Cover",              "Eco Bags India",   "Accessories", 9.3, 9.1, 3,  "Natural",              "jute,organic_cotton",       0.1, "Handmade jute phone pouch with cotton lining. Biodegradable. Indian craft."),
+
 ]

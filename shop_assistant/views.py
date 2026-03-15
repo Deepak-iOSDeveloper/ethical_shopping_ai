@@ -564,18 +564,33 @@ def api_chat(request):
     kw_list = [w for w in words if w not in stop and len(w) > 3]
     keyword = " ".join(kw_list[:3]) if kw_list else None
 
+    keyword_matched = False
     if keyword and not df.empty:
-        kw = keyword.lower()
-        kw_mask = (
-            df["name"].str.lower().str.contains(kw, na=False) |
-            df["brand"].str.lower().str.contains(kw, na=False) |
-            df["materials"].str.lower().str.contains(kw, na=False) |
-            df["description"].str.lower().str.contains(kw, na=False) |
-            df["sustainability_cert"].str.lower().str.contains(kw, na=False) |
-            df["category"].str.lower().str.contains(kw, na=False)
-        )
+        # Split multi-word keyword and search each word separately
+        # e.g. "organic food" → match rows containing "organic" OR "food"
+        kw_words = [w.strip() for w in keyword.lower().split() if len(w.strip()) > 2]
+
+        import numpy as np
+        combined_mask = np.zeros(len(df), dtype=bool)
+        for kw in kw_words:
+            word_mask = (
+                df["name"].str.lower().str.contains(kw, na=False) |
+                df["brand"].str.lower().str.contains(kw, na=False) |
+                df["materials"].str.lower().str.contains(kw, na=False) |
+                df["description"].str.lower().str.contains(kw, na=False) |
+                df["sustainability_cert"].str.lower().str.contains(kw, na=False) |
+                df["category"].str.lower().str.contains(kw, na=False)
+            )
+            combined_mask = combined_mask | word_mask.values
+
+        import pandas as _pd
+        kw_mask = _pd.Series(combined_mask, index=df.index)
         if kw_mask.any():
             df = df[kw_mask]
+            keyword_matched = True
+        else:
+            # No products matched at all — show no results
+            df = df.iloc[0:0]
 
     # Ethical filter re-ranking
     if eth_filters and not df.empty:
@@ -605,9 +620,27 @@ def api_chat(request):
     results = df.head(5)
 
     if results.empty:
+        # Build a clear styled no-results card
+        no_result_html = (
+            '<div style="background:#141f17;border:1px solid rgba(248,113,113,0.2);'
+            'border-radius:14px;padding:1.25rem 1.4rem;">'
+            '<div style="font-size:1.1rem;margin-bottom:0.6rem;">😕</div>'
+            '<p style="color:#f87171;font-weight:700;font-size:0.9rem;margin-bottom:0.4rem;">'
+            'No products found for your query.</p>'
+            '<p style="color:#8aaa94;font-size:0.82rem;line-height:1.7;margin-bottom:0.75rem;">'
+            f'I searched for <em>"{message[:50]}"</em> across all {len(ai_model.df)} products '
+            'but nothing matched. This might not be a product we carry.</p>'
+            '<p style="color:#4ade80;font-size:0.78rem;font-weight:600;margin-bottom:0.4rem;">Try asking:</p>'
+            '<p style="color:#8aaa94;font-size:0.78rem;line-height:1.9;">'
+            '• <em style="color:#4ade80;">"Show organic food under ₹500"</em><br>'
+            '• <em style="color:#4ade80;">"Bamboo toothbrush"</em><br>'
+            '• <em style="color:#4ade80;">"Fair trade clothing"</em><br>'
+            '• <em style="color:#4ade80;">"Natural personal care products"</em>'
+            '</p></div>'
+        )
         return JsonResponse({
-            "html": _no_results_response(message, budget_usd, categories),
-            "status": "ok", "engine": "ecomind"
+            "html": CARD_STYLES + no_result_html,
+            "status": "no_results", "engine": "ecomind"
         })
 
     # ── Step 3: EcoMindNet — predict ethical scores ───────────

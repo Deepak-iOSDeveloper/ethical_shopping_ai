@@ -1,5 +1,5 @@
 {
-  "vocab_size": 724,
+  "vocab_size": 782,
   "embed_dim": 32,
   "hidden_dim": 64,
   "num_classes": 8,
@@ -14,5 +14,5 @@
     "off_topic",
     "out_of_scope"
   ],
-  "best_val_acc": 0.9782
+  "best_val_acc": 0.9947
 }

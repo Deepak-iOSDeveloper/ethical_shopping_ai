@@ -18,9 +18,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 import json
 
-import os, sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from ecomind_llm.neural_net   import EcoMindNet
 from ecomind_llm.preprocessor import (
     build_input_text, TFIDFVectorizer,
@@ -228,13 +225,13 @@ def train(epochs=120, lr=0.001, batch_size=32):
             # Save best model
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
-                os.makedirs("saved_model", exist_ok=True)
+                os.makedirs("ecomind_llm/saved_model", exist_ok=True)
                 model.save("ecomind_llm/saved_model/ecomind_net.pkl")
-                best_weights_path = "saved_model/ecomind_net.pkl"
+                best_weights_path = "ecomind_llm/saved_model/ecomind_net.pkl"
 
     # ── Save vectorizer & log ────────────────────────────────
     vectorizer.save("ecomind_llm/saved_model/tfidf_vectorizer.pkl")
-    with open("saved_model/training_log.json", "w") as f:
+    with open("ecomind_llm/saved_model/training_log.json", "w") as f:
         json.dump(log, f, indent=2)
 
     print("\n" + "="*60)
