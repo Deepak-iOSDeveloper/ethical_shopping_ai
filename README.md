@@ -1,6 +1,6 @@
 # 🌿 EcoMind — AI-Driven Ethical Shopping Assistant
 
-### 🚀 Live at → [https://web-production-29da.up.railway.app/](https://web-production-29da.up.railway.app/)
+### 🚀 Live at → [https://www.ecomindshop.online/](https://www.ecomindshop.online/)
 
 A complete AI-powered web application that recommends eco-friendly and ethical products using a custom-built neural network and machine learning pipeline — **zero external APIs, 100% own code.**
 

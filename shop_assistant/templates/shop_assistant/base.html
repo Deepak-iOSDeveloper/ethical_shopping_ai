@@ -357,9 +357,9 @@
 
 <!-- FOOTER -->
 <footer class="footer">
-  <p>🌱 EcoMind AI — Ethical Shopping Assistant &nbsp;|&nbsp; &copy; 2026&nbsp;|&nbsp;
-     Built with ❤️ by DEEPAK, SACHIN & NITISH &nbsp; &nbsp;|&nbsp;
-     <a href="{% url 'shop_assistant:about' %}">&nbsp;How the AI works</a>
+  <p>🌱 EcoMind AI — Ethical Shopping Assistant &nbsp;|&nbsp;
+     Built with Django · NumPy · Pandas · Scikit-learn &nbsp;|&nbsp;
+     <a href="{% url 'shop_assistant:about' %}">How the AI works</a>
   </p>
 </footer>
 
@@ -805,19 +805,19 @@
 // ── Auth state — runs on every page ────────────────────
 (async function checkAuthState() {
   try {
-    var res  = await fetch('/api/auth/status/');
-    var data = await res.json();
-    var loginBtn  = document.getElementById('nav-login-btn');
-    var userPill  = document.getElementById('nav-user-pill');
-    var userEmail = document.getElementById('nav-user-email');
+    const res  = await fetch('/api/auth/status/');
+    const data = await res.json();
+    const loginBtn  = document.getElementById('nav-login-btn');
+    const userPill  = document.getElementById('nav-user-pill');
+    const userEmail = document.getElementById('nav-user-email');
     if (!loginBtn) return;
     if (data.logged_in) {
-      loginBtn.style.display = 'none';
-      userPill.style.display = 'flex';
-      userEmail.textContent  = data.name || data.email;
+      loginBtn.style.display  = 'none';
+      userPill.style.display  = 'flex';
+      userEmail.textContent   = data.email;
     } else {
-      loginBtn.style.display = 'inline-block';
-      userPill.style.display = 'none';
+      loginBtn.style.display  = 'inline-block';
+      userPill.style.display  = 'none';
     }
   } catch(e) {}
 })();
