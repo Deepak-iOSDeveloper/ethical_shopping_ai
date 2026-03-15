@@ -64,6 +64,21 @@ def product_detail(request, product_name):
         product['eco_score'], product['ethics_score'],
         product['carbon_footprint'], product['price'])
     product['brand_story'] = model.get_brand_story(product['brand'])
+
+    # Fields the template needs
+    mats = str(product.get('materials', ''))
+    product['materials_list'] = [m.strip() for m in mats.replace(',', '_').replace('_', ',').split(',') if m.strip()]
+
+    price = float(product.get('price', 0))
+    if price < 15:      product['price_tier'] = 'budget'
+    elif price < 50:    product['price_tier'] = 'affordable'
+    elif price < 150:   product['price_tier'] = 'mid'
+    elif price < 500:   product['price_tier'] = 'premium'
+    else:               product['price_tier'] = 'luxury'
+
+    # Convert price USD → INR for display
+    product['price_inr'] = int(price * 83)
+
     similar_df = model.get_similar_products(product_name)
     similar = similar_df.to_dict('records') if not similar_df.empty else []
     return render(request, 'shop_assistant/product_detail.html', {
@@ -741,6 +756,75 @@ def api_scan(request):
     if not name:
         return JsonResponse({"error": "Product name is required."}, status=400)
 
+    # ── Input validation — must be a real PRODUCT, not a name/word ─
+    import re as _re
+
+    # 1. Too short
+    if len(name) < 3:
+        return JsonResponse({"error": "Product name is too short. Enter something like 'Dove Shampoo'."}, status=400)
+
+    # 2. Gibberish — too few vowels
+    clean = _re.sub(r'[^a-zA-Z]', '', name.lower())
+    if len(clean) >= 5:
+        vowel_ratio = sum(1 for c in clean if c in 'aeiou') / len(clean)
+        if vowel_ratio < 0.15:
+            return JsonResponse({"error": "That doesn't look like a real product name. Try 'Kissan Peanut Butter' or 'Dove Shampoo'."}, status=400)
+
+    # 3. All same characters
+    if len(set(name.lower().replace(' ', ''))) < 3:
+        return JsonResponse({"error": "Please enter a real product name to get a meaningful score."}, status=400)
+
+    # 4. Single generic word with no supporting context
+    #    e.g. "deepak", "hello", "test", "xyz" — single word + no brand/materials/description
+    all_context = f"{brand} {materials} {description} {cert}".strip()
+    name_words  = name.strip().split()
+
+    # Blocklist — common non-product words people might type
+    non_product_words = {
+        # names
+        'deepak','rahul','priya','amit','anjali','rohit','pooja','raj','neha',
+        'vikas','sunita','kavita','anil','suresh','ramesh','mahesh','dinesh',
+        # test/junk
+        'test','hello','hi','hey','abc','xyz','asdf','qwerty','temp','dummy',
+        'sample','example','blah','foo','bar','baz','random','stuff','thing',
+        'something','anything','nothing','whatever','idk','lol','ok','okay',
+        # common English words that aren't products
+        'water','fire','earth','air','sun','moon','star','sky','rain','wind',
+        'good','bad','nice','great','cool','hot','cold','big','small','new',
+        'love','hate','life','time','day','night','man','woman','boy','girl',
+        'home','house','car','bike','phone','book','food','drink',
+    }
+
+    if len(name_words) == 1 and name.lower() in non_product_words:
+        return JsonResponse({
+            "error": f"'{name}' doesn't look like a product name. Please enter a product like 'Kissan Peanut Butter', 'Dove Shampoo', or 'Organic Green Tea'."
+        }, status=400)
+
+    # 5. Single short word with no product context
+    if len(name_words) == 1 and len(name) < 8 and not all_context:
+        return JsonResponse({
+            "error": f"'{name}' is too vague. Add a brand, category, or description so EcoMindNet can score it accurately."
+        }, status=400)
+
+    # 6. Looks like a personal name — single word, starts with capital,
+    #    no product-related words anywhere in all fields
+    product_signals = [
+        'shampoo','cream','oil','butter','juice','milk','soap','tea','coffee',
+        'bread','biscuit','chocolate','sauce','paste','powder','lotion','gel',
+        'spray','tablet','capsule','wash','conditioner','serum','sunscreen',
+        'organic','natural','vegan','fair','eco','bio','herbal','ayurvedic',
+        'cotton','polyester','bamboo','recycled','certified','gots','pack',
+        'bottle','tube','box','can','bag','sachet','kg','ml','gm','litre',
+        'food','drink','snack','beverage','cloth','wear','shoe','care','home',
+    ]
+    full_text = f"{name} {brand} {materials} {description} {cert}".lower()
+    has_product_signal = any(sig in full_text for sig in product_signals)
+
+    if len(name_words) == 1 and not has_product_signal and not all_context:
+        return JsonResponse({
+            "error": f"'{name}' doesn't look like a product. Please enter a product name like 'Kissan Peanut Butter', 'Dove Shampoo', or 'Organic Cotton T-shirt'."
+        }, status=400)
+
     # Build enriched description for EcoMindNet
     enriched = f"{name} {brand} {category} {description} {materials} {cert}".strip()
 
@@ -998,298 +1082,121 @@ def api_barcode_lookup(request):
 
 
 # ═══════════════════════════════════════════════════════════
-# AUTH — Email OTP Login (no password)
+# AUTH — Email + Password (Django built-in User)
 # ═══════════════════════════════════════════════════════════
 
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-
-def _get_logged_in_user(request):
-    """Return EcoUser if logged in via session, else None."""
-    from shop_assistant.models import EcoUser
-    uid = request.session.get('eco_user_id')
-    if uid:
-        try:
-            return EcoUser.objects.get(id=uid)
-        except EcoUser.DoesNotExist:
-            pass
-    return None
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.contrib.auth.models import User as DjangoUser
 
 
 def login_page(request):
-    return render(request, 'shop_assistant/login.html', {'page': 'login'})
+    return render(request, 'shop_assistant/login.html', {'page': 'signin'})
+
+
+def _get_logged_in_user(request):
+    """Return Django User if logged in, else None."""
+    if request.user.is_authenticated:
+        return request.user
+    return None
 
 
 @csrf_exempt
 @require_http_methods(["POST"])
-def api_send_otp(request):
-    """POST /api/auth/send-otp/  { email }"""
+def api_register(request):
+    """POST /api/auth/register/  { name, email, password }"""
     try:
-        from shop_assistant.models import OTPCode
-        data  = json.loads(request.body)
-        email = data.get('email', '').strip().lower()
+        data     = json.loads(request.body)
+        name     = data.get('name', '').strip()
+        email    = data.get('email', '').strip().lower()
+        password = data.get('password', '').strip()
+
         if not email or '@' not in email:
             return JsonResponse({'error': 'Enter a valid email address.'}, status=400)
+        if not password or len(password) < 6:
+            return JsonResponse({'error': 'Password must be at least 6 characters.'}, status=400)
+        if not name:
+            return JsonResponse({'error': 'Please enter your name.'}, status=400)
 
-        otp = OTPCode.generate(email)
+        if DjangoUser.objects.filter(email=email).exists():
+            return JsonResponse({'error': 'An account with this email already exists. Please login.'}, status=400)
 
-        # Always print to terminal — works even without email config
-        print(f'\n{"="*45}')
-        print(f'[EcoMind OTP]  Email : {email}')
-        print(f'[EcoMind OTP]  Code  : {otp.code}')
-        print(f'{"="*45}\n')
+        # username = email (Django requires unique username)
+        user = DjangoUser.objects.create_user(
+            username  = email,
+            email     = email,
+            password  = password,
+            first_name= name.split()[0] if name else '',
+            last_name = ' '.join(name.split()[1:]) if len(name.split()) > 1 else '',
+        )
+        user.save()
 
-        # Send email — read credentials directly from env
-        import os as _os
-        email_user = _os.environ.get('EMAIL_HOST_USER', '').strip()
-        email_pass = _os.environ.get('EMAIL_HOST_PASSWORD', '').strip()
-
-        print(f'[EcoMind OTP] EMAIL_HOST_USER set: {bool(email_user)}')
-        print(f'[EcoMind OTP] EMAIL_HOST_PASSWORD set: {bool(email_pass)}')
-
-        email_sent = False
-        email_error = ''
-
-        if email_user and email_pass:
-            try:
-                from django.core.mail import get_connection, EmailMessage
-                # Build connection manually to ensure fresh credentials
-                connection = get_connection(
-                    backend='django.core.mail.backends.smtp.EmailBackend',
-                    host='smtp.gmail.com',
-                    port=587,
-                    username=email_user,
-                    password=email_pass,
-                    use_tls=True,
-                    fail_silently=False,
-                )
-                msg_obj = EmailMessage(
-                    subject='Your EcoMind Login Code',
-                    body=(
-                        f'Your EcoMind AI login code is:\n\n'
-                        f'  {otp.code}\n\n'
-                        f'This code expires in 10 minutes.\n'
-                        f'If you did not request this, ignore this email.'
-                    ),
-                    from_email=email_user,
-                    to=[email],
-                    connection=connection,
-                )
-                msg_obj.send(fail_silently=False)
-                email_sent = True
-                print(f'[EcoMind OTP] ✅ Email sent successfully to {email}')
-            except Exception as mail_err:
-                email_error = str(mail_err)
-                print(f'[EcoMind OTP] ❌ Email send failed: {mail_err}')
-        else:
-            email_error = 'EMAIL_HOST_USER or EMAIL_HOST_PASSWORD not set in environment'
-            print(f'[EcoMind OTP] ⚠️  {email_error}')
-
-        msg = f'OTP sent to {email}' if email_sent else f'OTP generated (check server terminal)'
+        # Auto-login after registration
+        auth_login(request, user)
         return JsonResponse({
-            'status': 'sent',
-            'message': msg,
-            'dev_mode': not email_sent,
-            'email_error': email_error if not email_sent else '',
+            'status': 'ok',
+            'message': f'Account created! Welcome, {name}.',
+            'user': {'email': user.email, 'name': name, 'id': user.id},
         })
 
     except Exception as e:
         import traceback; traceback.print_exc()
-        return JsonResponse({'error': f'Server error: {str(e)} — did you run migrations?'}, status=500)
+        return JsonResponse({'error': str(e)}, status=500)
+
 
 @csrf_exempt
 @require_http_methods(["POST"])
-def api_verify_otp(request):
-    """POST /api/auth/verify-otp/  { email, code }"""
+def api_login(request):
+    """POST /api/auth/login/  { email, password }"""
     try:
-        from shop_assistant.models import EcoUser, OTPCode
-        try:
-            data  = json.loads(request.body)
-            email = data.get('email', '').strip().lower()
-            code  = data.get('code', '').strip()
-        except Exception:
-            return JsonResponse({'error': 'Invalid request'}, status=400)
+        data     = json.loads(request.body)
+        email    = data.get('email', '').strip().lower()
+        password = data.get('password', '').strip()
 
-        try:
-            otp = OTPCode.objects.filter(email=email, code=code, used=False).latest('created_at')
-        except OTPCode.DoesNotExist:
-            return JsonResponse({'error': 'Invalid or expired code. Try again.'}, status=400)
+        if not email or not password:
+            return JsonResponse({'error': 'Email and password are required.'}, status=400)
 
-        if not otp.is_valid():
-            return JsonResponse({'error': 'Code expired. Please request a new one.'}, status=400)
+        # Django uses username to authenticate — our username is the email
+        user = authenticate(request, username=email, password=password)
+        if user is None:
+            return JsonResponse({'error': 'Incorrect email or password.'}, status=400)
+        if not user.is_active:
+            return JsonResponse({'error': 'This account has been disabled.'}, status=400)
 
-        otp.used = True
-        otp.save()
-
-        # Get or create user
-        from django.utils import timezone
-        user, created = EcoUser.objects.get_or_create(email=email)
-        user.last_login = timezone.now()
-        user.save()
-
-        # Store in session
-        request.session['eco_user_id'] = user.id
-        request.session['eco_user_email'] = user.email
-
+        auth_login(request, user)
+        full_name = f"{user.first_name} {user.last_name}".strip() or user.email
         return JsonResponse({
             'status': 'ok',
-            'user': {'email': user.email, 'name': user.name, 'id': user.id},
-            'created': created,
+            'user': {'email': user.email, 'name': full_name, 'id': user.id},
         })
+
     except Exception as e:
         import traceback; traceback.print_exc()
-        return JsonResponse({'error': f'Server error: {str(e)}. Run: python manage.py migrate'}, status=500)
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @csrf_exempt
 @require_http_methods(["POST"])
 def api_logout(request):
-    request.session.flush()
+    auth_logout(request)
     return JsonResponse({'status': 'ok'})
 
 
 def api_auth_status(request):
-    """GET /api/auth/status/  — check if logged in"""
-    user = _get_logged_in_user(request)
-    if user:
-        return JsonResponse({'logged_in': True, 'email': user.email, 'name': user.name})
+    """GET /api/auth/status/"""
+    if request.user.is_authenticated:
+        full_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.email
+        return JsonResponse({'logged_in': True, 'email': request.user.email, 'name': full_name})
     return JsonResponse({'logged_in': False})
 
 
 # ═══════════════════════════════════════════════════════════
-# BARCODE PROXY — browser calls this, Django calls Open Food Facts
-# Avoids all browser CORS/fetch issues
-# ═══════════════════════════════════════════════════════════
-def api_barcode_lookup(request):
-    """
-    GET /api/barcode/?code=8901030857973
-    Django proxies the request to multiple product databases.
-    Returns unified product JSON or {'found': False}.
-    """
-    import urllib.request
-    import urllib.error
-
-    barcode = request.GET.get('code', '').strip()
-    if not barcode:
-        return JsonResponse({'found': False, 'error': 'No barcode provided'})
-
-    endpoints = [
-        f'https://world.openfoodfacts.org/api/v0/product/{barcode}.json',
-        f'https://in.openfoodfacts.org/api/v0/product/{barcode}.json',
-        f'https://world.openbeautyfacts.org/api/v0/product/{barcode}.json',
-        f'https://world.openproductsfacts.org/api/v0/product/{barcode}.json',
-    ]
-
-    headers = {
-        'User-Agent': 'EcoMindAI/1.0 (university project; contact: ecomind@lpu.in)',
-        'Accept': 'application/json',
-    }
-
-    for url in endpoints:
-        try:
-            req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=8) as resp:
-                import json as _json
-                data = _json.loads(resp.read().decode('utf-8'))
-                p = data.get('product', {})
-                if not p:
-                    continue
-
-                name = (p.get('product_name') or p.get('product_name_en') or
-                        p.get('product_name_hi') or p.get('generic_name') or
-                        p.get('abbreviated_product_name') or '').strip()
-                if not name:
-                    continue
-
-                brand       = (p.get('brands') or '').split(',')[0].strip()
-                ingredients = (p.get('ingredients_text') or p.get('ingredients_text_en') or '')[:400]
-                labels      = ', '.join(
-                    l.replace('en:', '').replace('fr:', '').replace('-', ' ')
-                    for l in (p.get('labels_tags') or [])
-                )
-                packaging   = ', '.join(
-                    x.replace('en:', '').replace('fr:', '').replace('-', ' ')
-                    for x in (p.get('packaging_tags') or [])
-                )
-                quantity    = p.get('quantity') or ''
-                countries   = ', '.join(
-                    c.replace('en:', '') for c in (p.get('countries_tags') or [])
-                )
-
-                cats = ' '.join(p.get('categories_tags') or []) + ' ' + (p.get('categories') or '')
-                cats = cats.lower()
-                category = 'Food'
-                if any(w in cats for w in ['shirt','cloth','apparel','jacket','dress','wear','jean']):
-                    category = 'Clothing'
-                elif any(w in cats for w in ['shoe','boot','footwear','sandal','sneaker']):
-                    category = 'Footwear'
-                elif any(w in cats for w in ['cosmetic','beauty','shampoo','lotion','cream','soap','hair','skin','perfume']):
-                    category = 'Personal Care'
-                elif any(w in cats for w in ['baby','infant','diaper']):
-                    category = 'Baby'
-                elif any(w in cats for w in ['kitchen','cleaning','detergent','household']):
-                    category = 'Kitchen'
-
-                desc_parts = []
-                if ingredients: desc_parts.append(f'Ingredients: {ingredients}')
-                if packaging:   desc_parts.append(f'Packaging: {packaging}')
-                if quantity:    desc_parts.append(f'Quantity: {quantity}')
-                if countries:   desc_parts.append(f'Made in: {countries}')
-
-                return JsonResponse({
-                    'found':       True,
-                    'source':      url.split('/')[2],
-                    'name':        name,
-                    'brand':       brand,
-                    'category':    category,
-                    'materials':   ingredients,
-                    'cert':        labels,
-                    'description': '. '.join(desc_parts),
-                    'quantity':    quantity,
-                })
-        except Exception as e:
-            continue
-
-    # UPCitemdb fallback (no auth needed for trial)
-    try:
-        upc_url = f'https://api.upcitemdb.com/prod/trial/lookup?upc={barcode}'
-        req = urllib.request.Request(upc_url, headers=headers)
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            import json as _json
-            data = _json.loads(resp.read().decode('utf-8'))
-            if data.get('code') == 'OK' and data.get('items'):
-                item = data['items'][0]
-                name = (item.get('title') or '').strip()
-                if name:
-                    return JsonResponse({
-                        'found':       True,
-                        'source':      'upcitemdb.com',
-                        'name':        name,
-                        'brand':       item.get('brand') or '',
-                        'category':    'General',
-                        'materials':   item.get('ingredients') or '',
-                        'cert':        '',
-                        'description': (item.get('description') or '')[:300],
-                        'quantity':    '',
-                    })
-    except Exception:
-        pass
-
-    return JsonResponse({'found': False, 'barcode': barcode})
-
-
-# ═══════════════════════════════════════════════════════════
-# SAVE PRODUCT — User saves a scanned product to their account
+# SAVE PRODUCT — linked to Django User account
 # ═══════════════════════════════════════════════════════════
 
 @csrf_exempt
 @require_http_methods(["POST"])
 def api_save_product(request):
-    """
-    POST /api/save-product/
-    Saves scanned product to UserSavedProduct AND adds it to
-    the live ML model DataFrame so it affects future recommendations.
-    """
+    """POST /api/save-product/ — saves scanned product to logged-in user's account."""
     user = _get_logged_in_user(request)
     if not user:
         return JsonResponse({'error': 'Login required to save products.'}, status=401)
@@ -1302,7 +1209,6 @@ def api_save_product(request):
     from shop_assistant.models import UserSavedProduct
     from ai_model.model import add_user_product
 
-    # Save to database
     product = UserSavedProduct.objects.create(
         user         = user,
         name         = data.get('name', '')[:200],
@@ -1321,7 +1227,7 @@ def api_save_product(request):
         source       = data.get('source', 'manual'),
     )
 
-    # Add to live ML model
+    # Add to live ML model immediately
     total = add_user_product({
         'name':         product.name,
         'brand':        product.brand,
@@ -1335,17 +1241,18 @@ def api_save_product(request):
         'carbon_level': product.carbon_level or 'moderate',
     })
 
+    full_name = f"{user.first_name} {user.last_name}".strip() or user.email
     return JsonResponse({
-        'status':    'saved',
-        'message':   f'"{product.name}" saved to your account!',
-        'product_id': product.id,
+        'status':         'saved',
+        'message':        '"{name}" saved to {user}!'.format(name=product.name, user=full_name),
+        'product_id':     product.id,
         'total_products': total,
     })
 
 
 @require_http_methods(["GET"])
 def api_my_products(request):
-    """GET /api/my-products/  — list saved products for logged-in user"""
+    """GET /api/my-products/ — list saved products for logged-in user."""
     user = _get_logged_in_user(request)
     if not user:
         return JsonResponse({'error': 'Login required'}, status=401)

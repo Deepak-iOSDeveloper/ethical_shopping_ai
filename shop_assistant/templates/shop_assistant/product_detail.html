@@ -340,7 +340,7 @@
             <div class="score-row-val">{{ product.eco_score }}/10</div>
           </div>
           <div class="progress-wrap">
-            <div class="progress-bar" style="width:{{ product.eco_score }}0%"></div>
+            <div class="progress-bar" id="bar-eco"></div>
           </div>
         </div>
         <div>
@@ -349,7 +349,7 @@
             <div class="score-row-val">{{ product.ethics_score }}/10</div>
           </div>
           <div class="progress-wrap">
-            <div class="progress-bar" style="width:{{ product.ethics_score }}0%"></div>
+            <div class="progress-bar" id="bar-ethics"></div>
           </div>
         </div>
         <div>
@@ -390,4 +390,16 @@
   </div>
 
 </div>
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    var eco    = {{ product.eco_score }};
+    var ethics = {{ product.ethics_score }};
+    var barEco    = document.getElementById('bar-eco');
+    var barEthics = document.getElementById('bar-ethics');
+    if (barEco)    barEco.style.width    = (eco    / 10 * 100) + '%';
+    if (barEthics) barEthics.style.width = (ethics / 10 * 100) + '%';
+  }, 200);
+});
+</script>
 {% endblock %}

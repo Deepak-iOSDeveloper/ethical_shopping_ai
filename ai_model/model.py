@@ -332,6 +332,38 @@ class EthicalShoppingAI:
     def _build_dataset(self):
         self.df = pd.DataFrame(PRODUCTS_DATA, columns=COLUMNS)
 
+        # ── Load user-saved products from DB (persists across restarts) ──
+        try:
+            import django
+            import os as _os
+            _os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ethical_shopping.settings')
+            if django.apps.apps.ready:
+                from shop_assistant.models import UserSavedProduct
+                carbon_map = {'ultra_low': 0.3, 'low': 1.0, 'moderate': 2.5, 'high': 5.0}
+                saved = UserSavedProduct.objects.filter(
+                    eco_score__isnull=False, ethics_score__isnull=False
+                )
+                extra_rows = []
+                for sp in saved:
+                    extra_rows.append((
+                        sp.name,
+                        sp.brand or 'Unknown',
+                        sp.category or 'General',
+                        float(sp.eco_score or 5.0),
+                        float(sp.ethics_score or 5.0),
+                        float(sp.price or 10.0),
+                        sp.cert or '',
+                        sp.materials or '',
+                        carbon_map.get(sp.carbon_level or 'moderate', 2.5),
+                        sp.description or '',
+                    ))
+                if extra_rows:
+                    extra_df = pd.DataFrame(extra_rows, columns=COLUMNS)
+                    self.df = pd.concat([self.df, extra_df], ignore_index=True)
+                    print(f"[EcoMind] ✅ Loaded {len(extra_rows)} user-saved products from DB")
+        except Exception as e:
+            pass  # DB not ready yet on first run — that's fine
+
         # Composite ethical score (weighted average)
         self.df["composite_score"] = (
             self.df["eco_score"] * 0.4 +
@@ -364,9 +396,15 @@ class EthicalShoppingAI:
         print(f"[AI Model] RandomForest trained on {len(self.df)} products. Accuracy: {accuracy:.2%}")
 
     def predict_ethical_rating(self, eco_score, ethics_score, carbon_fp, price):
-        X = np.array([[eco_score, ethics_score, carbon_fp, price]])
-        prob = self.rf_classifier.predict_proba(X)[0][1]
-        return round(prob * 100, 1)
+        # Percentile-based scoring — more meaningful than RandomForest on a skewed dataset
+        # (RF returned ~100% for everything because 68% of products already score >= 8.8)
+        eco_pct    = float((self.df['eco_score']        <= eco_score).mean())
+        ethics_pct = float((self.df['ethics_score']     <= ethics_score).mean())
+        carbon_pct = float((self.df['carbon_footprint'] >= carbon_fp).mean())  # lower = better
+        percentile = (eco_pct * 0.35 + ethics_pct * 0.35 + carbon_pct * 0.30)
+        # Scale: median product ~50%, best ~95%, worst ~15%
+        prob = 15.0 + (percentile * 80.0)
+        return round(max(5.0, min(98.0, prob)), 1)
 
     def recommend(self, category=None, budget=None, keyword=None, top_n=50):
         df = self.df.copy()
@@ -394,13 +432,25 @@ class EthicalShoppingAI:
         return df.head(top_n).reset_index(drop=True)
 
     def get_similar_products(self, product_name, top_n=3):
-        idx = self.df[self.df["name"] == product_name].index
-        if idx.empty:
+        try:
+            # Use positional index (iloc position) not DataFrame index label
+            mask = self.df["name"] == product_name
+            if not mask.any():
+                return pd.DataFrame()
+            pos = mask.values.argmax()  # positional index in df
+
+            # Safety check — feature_matrix must match df length
+            if pos >= len(self.feature_matrix):
+                return pd.DataFrame()
+
+            sim_scores  = cosine_similarity([self.feature_matrix[pos]], self.feature_matrix)[0]
+            sim_indices = np.argsort(sim_scores)[::-1]
+            # Skip self, take top_n
+            sim_indices = [i for i in sim_indices if i != pos][:top_n]
+            return self.df.iloc[sim_indices][["name", "brand", "category", "composite_score", "price"]].reset_index(drop=True)
+        except Exception as e:
+            print(f"[EcoMind] get_similar_products error: {e}")
             return pd.DataFrame()
-        idx = idx[0]
-        sim_scores = cosine_similarity([self.feature_matrix[idx]], self.feature_matrix)[0]
-        sim_indices = np.argsort(sim_scores)[::-1][1:top_n + 1]
-        return self.df.iloc[sim_indices][["name", "brand", "category", "composite_score", "price"]].reset_index(drop=True)
 
     def get_stats(self):
         return {
