@@ -333,21 +333,21 @@
     <li><a href="{% url 'shop_assistant:about' %}" class="{% if page == 'about' %}active{% endif %}">How It Works</a></li>
     <li><a href="{% url 'shop_assistant:scan' %}" class="{% if page == 'scan' %}active{% endif %}" style="color:var(--green-bright);font-weight:600;">🔍 Scan Product</a></li>
   </ul>
-  <div id="nav-auth" style="margin-left:1rem;">
-    <a href="{% url 'shop_assistant:signin' %}" id="nav-login-btn"
-       style="background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.25);
-              color:var(--green-bright);padding:5px 14px;border-radius:8px;
-              font-size:0.8rem;font-weight:700;text-decoration:none;display:none;">
-      Login
-    </a>
-    <div id="nav-user-pill" style="display:none;align-items:center;gap:0.5rem;">
-      <span style="font-size:0.75rem;color:var(--text-muted);" id="nav-user-email"></span>
-      <button onclick="doLogout()"
-        style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);
-               color:#f87171;padding:3px 10px;border-radius:6px;font-size:0.72rem;
-               cursor:pointer;font-weight:600;">Logout</button>
-    </div>
-  </div>
+<!--  <div id="nav-auth" style="margin-left:1rem;">-->
+<!--    <a href="{% url 'shop_assistant:signin' %}" id="nav-login-btn"-->
+<!--       style="background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.25);-->
+<!--              color:var(&#45;&#45;green-bright);padding:5px 14px;border-radius:8px;-->
+<!--              font-size:0.8rem;font-weight:700;text-decoration:none;display:none;">-->
+<!--      Login-->
+<!--    </a>-->
+<!--    <div id="nav-user-pill" style="display:none;align-items:center;gap:0.5rem;">-->
+<!--      <span style="font-size:0.75rem;color:var(&#45;&#45;text-muted);" id="nav-user-email"></span>-->
+<!--      <button onclick="doLogout()"-->
+<!--        style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);-->
+<!--               color:#f87171;padding:3px 10px;border-radius:6px;font-size:0.72rem;-->
+<!--               cursor:pointer;font-weight:600;">Logout</button>-->
+<!--    </div>-->
+<!--  </div>-->
 </nav>
 
 <!-- MAIN -->
