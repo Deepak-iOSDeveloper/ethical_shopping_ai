@@ -1,20 +1,16 @@
 """
-Django settings for Ethical Shopping AI project.
+EcoMind AI — Django Settings
+- Local: SQLite
+- Vercel + Supabase: PostgreSQL via DATABASE_URL
 """
 import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-ethical-shopping-ai-project-2024-change-in-production'
-
-# ── Gemini API Key ──────────────────────────────────────────────
-# Get your FREE key at: https://aistudio.google.com/app/apikey
-GEMINI_API_KEY = "your-gemini-api-key-here"
-
-DEBUG = True
-
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-ecomind-change-this-in-production-2024')
+DEBUG      = os.environ.get('DEBUG', 'True') == 'True'
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -28,6 +24,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -56,30 +53,52 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ethical_shopping.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# ── Database ─────────────────────────────────────────────────────
+# Vercel+Supabase: set DATABASE_URL in Vercel environment variables
+# Local: uses SQLite automatically
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
+
+if DATABASE_URL:
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=60,        # Supabase closes idle connections after 60s
+            conn_health_checks=True,
+            ssl_require=True,
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
-USE_I18N = True
-USE_TZ = True
-
-STATIC_URL = '/static/'
+# ── Static files ─────────────────────────────────────────────────
+STATIC_URL    = '/static/'
+STATIC_ROOT   = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'shop_assistant' / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-MEDIA_URL = '/media/'
+MEDIA_URL  = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# ── Session ──────────────────────────────────────────────────────
+SESSION_COOKIE_AGE         = 60 * 60 * 24 * 30
+SESSION_SAVE_EVERY_REQUEST = True
+
+# ── Internationalisation ─────────────────────────────────────────
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE     = 'Asia/Kolkata'
+USE_I18N      = True
+USE_TZ        = True
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-# ── Session ─────────────────────────────────────────────────────
-SESSION_COOKIE_AGE  = 60 * 60 * 24 * 30   # 30 days
-SESSION_SAVE_EVERY_REQUEST = True
-
-ALLOWED_HOSTS = ['*']
+# ── CSRF ─────────────────────────────────────────────────────────
+CSRF_TRUSTED_ORIGINS = os.environ.get(
+    'CSRF_TRUSTED_ORIGINS',
+    'http://localhost:8000'
+).split()
