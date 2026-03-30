@@ -378,13 +378,13 @@
 
   <div class="score-bars">
     <span>Eco</span>
-    <div class="progress-bar" style="width: {{ (p.eco_score / 10) * 100 }}%"></div></div>
-    <span class="text-mono text-green">{{ p.eco_score }}/10</span>
+    <div class="progress-bar" style="width: {% widthratio p.eco_score 10 100 %}%"></div>
+    <span class="text-mono text-green">{{ p.eco_score|floatformat:1 }}/10</span>
     <span>Ethics</span>
-    <div class="progress-bar" style="width: {{ (p.ethics_score / 10) * 100 }}%"></div></div>
-    <span class="text-mono text-green">{{ p.ethics_score }}/10</span>
-  </div>
-
+    <div class="progress-bar" style="width: {% widthratio p.ethics_score 10 100 %}%"></div>
+    <span class="text-mono text-green">{{ p.ethics_score|floatformat:1 }}/10</span>
+</div>
+  
   <div class="product-footer">
     <span class="product-price">${{ p.price }}</span>
     <div style="display:flex; gap:6px; align-items:center;">
