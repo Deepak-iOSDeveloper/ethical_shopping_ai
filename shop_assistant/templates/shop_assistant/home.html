@@ -414,7 +414,7 @@
   </div>
 
   <div class="product-footer">
-    <span class="product-price">₹{{ p.price|floatformat:0 }}</span>
+    <span class="product-price">${{ p.price|floatformat:0 }}</span>
     <div style="display:flex; gap:6px; align-items:center;">
       <span class="score-badge score-high">CO₂ {{ p.carbon_footprint }}kg</span>
     </div>
