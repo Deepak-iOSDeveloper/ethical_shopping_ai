@@ -233,6 +233,7 @@
     color: var(--text-primary);
   }
 
+  /* ─── SCORE BARS ─── */
   .score-bars {
     display: grid;
     grid-template-columns: auto 1fr auto;
@@ -240,6 +241,19 @@
     align-items: center;
     font-size: 0.75rem;
     color: var(--text-dim);
+  }
+
+  .bar-track {
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 100px;
+    background: linear-gradient(90deg, #22c55e, #4ade80);
   }
 
   /* ─── CATEGORY CHIPS ─── */
@@ -298,8 +312,8 @@
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Max Budget ($)</label>
-        <input type="number" name="budget" class="form-control" placeholder="e.g. 100" min="1">
+        <label class="form-label">Max Budget (₹)</label>
+        <input type="number" name="budget" class="form-control" placeholder="e.g. 1000" min="1">
       </div>
       <div class="form-group">
         <label class="form-label">Search Keywords</label>
@@ -353,6 +367,7 @@
 <div class="product-grid">
 {% for p in featured %}
 <a href="{% url 'shop_assistant:product_detail' p.name %}" class="product-card animate-in" style="animation-delay: {{ forloop.counter0 }}00ms">
+
   <div class="product-header">
     <div class="product-emoji">
       {% if p.category == 'Clothing' %}👕
@@ -364,9 +379,16 @@
       {% elif p.category == 'Accessories' %}🎒
       {% elif p.category == 'Outdoors' %}⛺
       {% elif p.category == 'Food' %}☕
+      {% elif p.category == 'Baby' %}🍼
+      {% elif p.category == 'Health' %}💊
+      {% elif p.category == 'Cleaning' %}🧹
+      {% elif p.category == 'Stationery' %}📓
+      {% elif p.category == 'Electronics' %}💻
+      {% elif p.category == 'Sports' %}🏋️
+      {% elif p.category == 'Pet Care' %}🐾
       {% else %}🌿{% endif %}
     </div>
-    <div class="product-score-big">{{ p.composite_score }}</div>
+    <div class="product-score-big">{{ p.composite_score|floatformat:1 }}</div>
   </div>
 
   <div>
@@ -376,34 +398,30 @@
 
   <div class="product-desc">{{ p.description }}</div>
 
+  <!-- SCORE BARS — widthratio calculates correct % per product -->
   <div class="score-bars">
     <span>Eco</span>
-    <div class="progress-bar" id="bar-eco"></div>
+    <div class="bar-track">
+      <div class="bar-fill" style="width:{% widthratio p.eco_score 10 100 %}%"></div>
+    </div>
     <span class="text-mono text-green">{{ p.eco_score|floatformat:1 }}/10</span>
+
     <span>Ethics</span>
-    <div class="progress-bar" id="bar-ethics"></div>
+    <div class="bar-track">
+      <div class="bar-fill" style="width:{% widthratio p.ethics_score 10 100 %}%"></div>
+    </div>
     <span class="text-mono text-green">{{ p.ethics_score|floatformat:1 }}/10</span>
-</div>
-  
+  </div>
+
   <div class="product-footer">
-    <span class="product-price">${{ p.price }}</span>
+    <span class="product-price">₹{{ p.price|floatformat:0 }}</span>
     <div style="display:flex; gap:6px; align-items:center;">
       <span class="score-badge score-high">CO₂ {{ p.carbon_footprint }}kg</span>
     </div>
   </div>
+
 </a>
 {% endfor %}
 </div>
-<script>
-window.addEventListener('DOMContentLoaded', function() {
-  setTimeout(function() {
-    var eco    = {{ product.eco_score }};
-    var ethics = {{ product.ethics_score }};
-    var barEco    = document.getElementById('bar-eco');
-    var barEthics = document.getElementById('bar-ethics');
-    if (barEco)    barEco.style.width    = (eco    / 10 * 100) + '%';
-    if (barEthics) barEthics.style.width = (ethics / 10 * 100) + '%';
-  }, 200);
-});
-</script>
+
 {% endblock %}
