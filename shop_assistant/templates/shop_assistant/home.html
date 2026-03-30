@@ -378,10 +378,10 @@
 
   <div class="score-bars">
     <span>Eco</span>
-    <div class="progress-bar" style="width: {% widthratio p.eco_score 10 100 %}%"></div>
+    <div class="progress-bar" id="bar-eco"></div>
     <span class="text-mono text-green">{{ p.eco_score|floatformat:1 }}/10</span>
     <span>Ethics</span>
-    <div class="progress-bar" style="width: {% widthratio p.ethics_score 10 100 %}%"></div>
+    <div class="progress-bar" id="bar-ethics"></div>
     <span class="text-mono text-green">{{ p.ethics_score|floatformat:1 }}/10</span>
 </div>
   
@@ -394,5 +394,16 @@
 </a>
 {% endfor %}
 </div>
-
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    var eco    = {{ product.eco_score }};
+    var ethics = {{ product.ethics_score }};
+    var barEco    = document.getElementById('bar-eco');
+    var barEthics = document.getElementById('bar-ethics');
+    if (barEco)    barEco.style.width    = (eco    / 10 * 100) + '%';
+    if (barEthics) barEthics.style.width = (ethics / 10 * 100) + '%';
+  }, 200);
+});
+</script>
 {% endblock %}
